@@ -1,0 +1,540 @@
+/-
+Copyright (c) 2025 . All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Bingyu Xia
+-/
+
+import Mathlib.Algebra.Lie.OfAssociative
+import Mathlib.Data.ENat.Lattice
+import Mathlib.Order.BourbakiWitt
+import Mathlib.RingTheory.Ideal.BigOperators
+import Mathlib.RingTheory.PowerSeries.Order
+
+suppress_compilation
+
+open PowerSeries Classical Finset
+
+variable {R : Type*} [CommRing R]
+variable (I : Ideal R⟦X⟧) (n : ℕ) (r : R)
+
+/-- define the ideal of coefficients at order `n` -/
+private def aux_I_set := {a | ∃ f ∈ I, f.order = n ∧ coeff n f = a} ∪ {0}
+
+private lemma add_mem_I {a b : R} : a ∈ aux_I_set I n →
+    b ∈ aux_I_set I n → a + b ∈ aux_I_set I n := by
+  simp only [Set.union_singleton, Set.mem_insert_iff, Set.mem_setOf_eq, aux_I_set]
+  rintro (_ | ⟨f, f_in, f_ord, f_coeff⟩) (_ | ⟨g, g_in, g_ord, g_coeff⟩)
+  any_goals grind
+  by_cases! h : coeff n (f + g) = 0
+  · left
+    rwa [← f_coeff, ← g_coeff, ← map_add]
+  right
+  use f + g
+  refine ⟨I.add_mem f_in g_in, order_eq_nat.mpr ⟨h, fun i i_lt ↦ ?_⟩, ?_⟩
+  · rw [order_eq_nat] at f_ord g_ord
+    rw [map_add, f_ord.right i i_lt, g_ord.right i i_lt, zero_add]
+  rw [map_add, f_coeff, g_coeff]
+
+private lemma smul_mem_I (c : R) {x : R} :
+    x ∈ aux_I_set I n → c • x ∈ aux_I_set I n := by
+  simp only [Set.union_singleton, Set.mem_insert_iff, Set.mem_setOf_eq, smul_eq_mul, aux_I_set]
+  rintro (_ | ⟨f, f_in, f_ord, f_coeff⟩)
+  · grind
+  rw [or_iff_not_imp_left]
+  intro h
+  use c • f
+  rw [smul_eq_C_mul]
+  refine ⟨I.mul_mem_left (C c) f_in, order_eq_nat.mpr ⟨?_, ?_⟩, ?_⟩
+  · rwa [coeff_C_mul, f_coeff]
+  · intro i i_lt
+    rw [coeff_C_mul, (order_eq_nat.mp f_ord).right i i_lt, mul_zero]
+  rw [coeff_C_mul, f_coeff]
+
+/-- prove `I` is monotone -/
+private lemma monotone_I {i j} (h : i ≤ j) :
+    aux_I_set I i ⊆ aux_I_set I j := by
+  simp only [Set.union_singleton, Set.subset_def, Set.mem_insert_iff, Set.mem_setOf_eq,
+    forall_eq_or_imp, true_or, forall_exists_index, and_imp, true_and, aux_I_set]
+  intro r f f_in f_ord f_coeff
+  right
+  use X ^ (j - i) * f
+  refine ⟨I.mul_mem_left (X ^ (j - i)) f_in, order_eq_nat.mpr ⟨?_, ?_⟩, ?_⟩
+  · nth_rw 1 [show j = i + (j - i) by omega]
+    rw [coeff_X_pow_mul]
+    exact (order_eq_nat.mp f_ord).left
+  · intro k k_lt
+    rw [coeff_mul, sum_eq_zero]
+    simp only [mem_antidiagonal, coeff_X_pow, ite_mul, one_mul, zero_mul,
+      ite_eq_right_iff, Prod.forall]
+    intros
+    exact (order_eq_nat.mp f_ord).right _ (by omega)
+  · nth_rw 1 [show j = i + (j - i) by omega]
+    rwa [coeff_X_pow_mul]
+
+private def aux_I : ℕ →o Ideal R := {
+  toFun := fun n ↦ {
+    carrier := aux_I_set I n
+    add_mem' := add_mem_I I n
+    zero_mem' := by simp [aux_I_set]
+    smul_mem' := smul_mem_I I n
+    }
+  monotone' := by
+    intro _ _ h
+    simp [monotone_I I h]
+    }
+
+/-- define the lift of an element in `aux_I` to a power series in `I` -/
+private lemma aux_exists_lift (ne_0 : r ≠ 0) (h : r ∈ aux_I I n) :
+    ∃ f ∈ I, f.order = n ∧ coeff n f = r := by
+  simpa [aux_I, aux_I_set, ne_0] using h
+
+private def lift (ne_0 : r ≠ 0) (h : r ∈ aux_I I n) : R⟦X⟧ :=
+  choose (aux_exists_lift I n r ne_0 h)
+
+private lemma lift_prop_1 (ne_0 : r ≠ 0) (h : r ∈ aux_I I n) :
+    lift I n r ne_0 h ∈ I := (choose_spec (aux_exists_lift I n r ne_0 h)).left
+
+private lemma lift_prop_2 (ne_0 : r ≠ 0) (h : r ∈ aux_I I n) :
+    (lift I n r ne_0 h).order = n := (choose_spec (aux_exists_lift I n r ne_0 h)).right.left
+
+private lemma lift_prop_3 (ne_0 : r ≠ 0) (h : r ∈ aux_I I n) :
+    coeff n (lift I n r ne_0 h) = r := (choose_spec (aux_exists_lift I n r ne_0 h)).right.right
+
+variable [IsNoetherianRing R]
+
+/-- apply the noetherian hypothesis on `aux_I I` and define generators `a` -/
+private def d := choose ((monotone_stabilizes_iff_noetherian.mpr inferInstance) (aux_I I))
+
+private lemma hd : ∀ (m : ℕ), d I ≤ m → (aux_I I) (d I) = (aux_I I) m :=
+  choose_spec ((monotone_stabilizes_iff_noetherian.mpr inferInstance) (aux_I I))
+
+private lemma aux_I_fg : (aux_I I n).FG :=
+  ((isNoetherianRing_iff_ideal_fg R).mp inferInstance) (aux_I I n)
+
+private def a : Finset R := (if n ≤ d I then choose (aux_I_fg I n) else
+    choose (aux_I_fg I (d I))) \ {0}
+
+private lemma a_mem_ne_0 (n x) (h : x ∈ a I n) : x ≠ 0 := by
+  simp only [mem_sdiff, mem_singleton, a] at h
+  exact h.right
+
+private lemma a_span_I : Ideal.span (a I n) = aux_I I n := by
+  dsimp only [a]
+  rw [coe_sdiff, coe_singleton, Ideal.span_sdiff_singleton_zero]
+  split
+  · exact choose_spec (aux_I_fg I n)
+  rw [← hd I n (by grind)]
+  exact choose_spec (aux_I_fg I (d I))
+
+private lemma a_ge_d (n_ge : d I ≤ n) : a I n = a I (d I) := by
+  rw [le_iff_eq_or_lt] at n_ge
+  rcases n_ge with h|h
+  · rw [h]
+  simp [a, ite_cond_eq_false _ _ (show (n ≤ d I) = False by grind)]
+
+/-- lift `a` to finite sets `f` of power series -/
+private def lift_fun (n) : a I n → R⟦X⟧ := fun ⟨r, hr⟩ ↦ lift I n r (a_mem_ne_0 I n r hr)
+  (by rw [← a_span_I]; exact Set.mem_of_subset_of_mem Ideal.subset_span hr)
+
+private def f (m : ℕ) : Finset R⟦X⟧ := image (lift_fun I m) univ
+
+private def res_lift (n) := fun (s : a I n) ↦
+  (⟨lift_fun I n s, mem_image_of_mem _ (mem_univ _)⟩ : f I n)
+
+private lemma res_lift_bij : Function.Bijective (res_lift I n) := by
+  constructor
+  · simp only [Function.Injective, a, res_lift, lift_fun, lift, Subtype.mk.injEq, Subtype.forall,
+      mem_sdiff, mem_singleton, forall_and_index]
+    grind
+  simp [Function.Surjective, a, res_lift, lift_fun, lift, f]
+
+private def res_liftEquiv n := Equiv.ofBijective _ (res_lift_bij I n)
+
+/-- define an ideal `I'` to be the ideal spanned by all `f`'s -/
+private def I' := Ideal.span (SetLike.coe ((range (d I + 1)).sup (f I)))
+
+/-- `I'` is contained in `I` -/
+private lemma I'_le : I' I ≤ I := by
+  rw [SetLike.le_def]
+  intro x x_in
+  refine Set.mem_of_subset_of_mem (Ideal.span_le.mpr ?_) x_in
+  simp only [univ_eq_attach, Set.subset_def, SetLike.mem_coe, mem_sup,
+    mem_range, mem_image, mem_attach, true_and, Subtype.exists,
+    forall_exists_index, and_imp, f, lift_fun]
+  intro _ _ _ _ _ h'
+  rw [← h']
+  apply lift_prop_1
+
+omit [IsNoetherianRing R] in
+private lemma aux_coeff_mem (p) (h : p ∈ I) (ne_0 : p ≠ 0) :
+    coeff p.order.toNat p ∈ aux_I I p.order.toNat := by
+  simp only [aux_I, aux_I_set, Set.union_singleton, OrderHom.coe_mk, Submodule.mem_mk,
+      AddSubmonoid.mem_mk, AddSubsemigroup.mem_mk, Set.mem_insert_iff, Set.mem_setOf_eq]
+  right
+  use p
+  refine ⟨h, Eq.symm (ENat.coe_toNat ?_), rfl⟩
+  rwa [ne_eq, order_eq_top]
+
+variable [Nontrivial R]
+
+/-- the existance lemma for the coefficients in the lowest degree when `p.order` is at least `d I` -/
+private lemma exists_coeffs_of_ord_ge (p) (h : p ∈ I) (ne_0 : p ≠ 0) (ord_ge : d I ≤ p.order) :
+    ∃ c : f I (d I) → R , p.order < (p - ∑ i : f I (d I), c i • X ^ (p.order.toNat - (d I)) * i.1).order
+      := by
+  have := aux_coeff_mem I p h ne_0
+  apply ENat.toNat_le_toNat at ord_ge
+  simp only [ne_eq, order_eq_top, ne_0, not_false_eq_true, ENat.toNat_coe, forall_const] at ord_ge
+  rw [← hd I _ ord_ge, ← a_span_I, Ideal.span, Submodule.mem_span_finset'] at this
+  rcases this with ⟨c', hc'⟩
+  use c' ∘ (res_liftEquiv I (d I)).invFun
+  rw [← ENat.add_one_le_iff (by rwa [ne_eq, order_eq_top])]
+  apply le_order
+  intro i i_lt
+  by_cases h' : i = p.order
+  · have : p.order.toNat = i := by
+      by_cases! h'' : i = 0
+      · rw [h'', CharP.cast_eq_zero] at h'
+        simp [← h', h'']
+      rw [ENat.toNat_eq_iff h'', h']
+    rw [← this, map_sub, sub_eq_zero, ← hc', map_sum]
+    refine Fintype.sum_equiv (res_liftEquiv I _) _ _ ?_
+    simp only [smul_eq_mul, Equiv.invFun_as_coe, Function.comp_apply, Equiv.symm_apply_apply,
+      Algebra.smul_mul_assoc, map_smul, coeff_mul, coeff_X_pow, ite_mul, one_mul, zero_mul,
+      Subtype.forall]
+    intro r r_in
+    congr 1
+    rw [sum_eq_single_of_mem (p.order.toNat - d I, d I) (by rw [mem_antidiagonal]; grind)]
+    simp [res_liftEquiv, res_lift, lift_fun, lift_prop_3]
+    · simp only [mem_antidiagonal, ne_eq, Equiv.ofBijective_apply, ite_eq_right_iff,
+        Prod.forall, Prod.mk.injEq, not_and, res_liftEquiv, res_lift, lift_fun]
+      grind
+  rw [map_sub, map_sum, sub_eq_zero, coeff_of_lt_order]
+  symm
+  apply sum_eq_zero
+  simp only [univ_eq_attach, mem_attach, Equiv.invFun_as_coe, Function.comp_apply,
+    Algebra.smul_mul_assoc, map_smul, smul_eq_mul, forall_const, Subtype.forall]
+  intro q q_in
+  rw [coeff_of_lt_order, mul_zero]
+  · simp only [univ_eq_attach, mem_image, mem_attach, true_and, Subtype.exists,
+      f, lift_fun] at q_in
+    rcases q_in with ⟨r, ⟨r_in, hr⟩⟩
+    refine lt_of_lt_of_le ?_ (le_order_mul _ _)
+    rw [← hr, lift_prop_2, order_X_pow, ← ENat.coe_add, Nat.sub_add_cancel ord_ge,
+      ENat.coe_toNat (by rwa [ne_eq, order_eq_top])]
+    rw [ENat.lt_add_one_iff (by rwa [ne_eq, order_eq_top])] at i_lt
+    exact Std.lt_of_le_of_ne i_lt h'
+  · rw [ENat.lt_add_one_iff (by rwa [ne_eq, order_eq_top])] at i_lt
+    exact Std.lt_of_le_of_ne i_lt h'
+
+/-- define `c'` to be the coefficients of elements in `f d` so that the linear combination
+  has the same lowest coefficient with `p` -/
+private def c' (p) (h : p ∈ I) (ne_0 : p ≠ 0) (ord_ge : d I ≤ p.order) :=
+  choose (exists_coeffs_of_ord_ge I p h ne_0 ord_ge)
+
+private lemma hc' (p) (h : p ∈ I) (ne_0 : p ≠ 0) (ord_ge : d I ≤ p.order) :
+    p.order < (p - ∑ i, c' I p h ne_0 ord_ge i • X ^ (p.order.toNat - d I) * i.1).order :=
+  choose_spec (exists_coeffs_of_ord_ge I p h ne_0 ord_ge)
+
+private lemma c'_sum_mem_I' (p) (h : p ∈ I) (ne_0 : p ≠ 0) (ord_ge : d I ≤ p.order) :
+    ∑ i, c' I p h ne_0 ord_ge i • X ^ (p.order.toNat - d I) * i.1 ∈ I' I := by
+  apply (I' I).sum_mem
+  simp only [univ_eq_attach, mem_attach, Algebra.smul_mul_assoc, forall_const,
+    Subtype.forall]
+  intro a a_in
+  rw [smul_eq_C_mul]
+  refine (I' I).mul_mem_left _ ((I' I).mul_mem_left _ (Set.mem_of_subset_of_mem ?_ a_in))
+  trans ↑(Ideal.span (SetLike.coe (f I (d I))))
+  · exact Ideal.subset_span
+  apply Ideal.span_mono
+  simp only [Set.subset_def, SetLike.mem_coe, mem_sup, mem_range]
+  intro _ h
+  use d I
+  simp [h]
+
+/-- define the operation of canceling the lowest term for a power series `p` in `I`
+  whose order is at least `d I` -/
+private def cancel_lowest' (n : ℕ) (p) (p_in : p ∈ I) (ord_ge : d I ≤ p.order) :
+    {x : R⟦X⟧ // x ∈ I ∧ d I ≤ x.order} := by
+  induction n with
+  | zero => exact ⟨p, p_in, ord_ge⟩
+  | succ n pn =>
+    exact if h : pn.1 ≠ 0 then ⟨pn.1 - ∑ i, c' I pn.1 pn.2.left (by simp [h]) pn.2.right i •
+      X ^ (pn.1.order.toNat - d I) * i.1, I.sub_mem pn.2.left (I'_le I (c'_sum_mem_I' I pn.1
+        pn.2.left h pn.2.right)), by grind [hc']⟩ else ⟨0, by simp⟩
+
+private lemma cancel_lowest'_succ (n) (p) (p_in : p ∈ I) (ord_ge : d I ≤ p.order)
+    (ne_0 : (cancel_lowest' I n p p_in ord_ge).1 ≠ 0) :
+      (cancel_lowest' I (n + 1) p p_in ord_ge).1 = (cancel_lowest' I n p p_in ord_ge).1 -
+        ∑ i, c' I (cancel_lowest' I n p p_in ord_ge).1 (cancel_lowest' I n p p_in ord_ge).2.left ne_0
+          (cancel_lowest' I n p p_in ord_ge).2.right i •
+            X ^ ((cancel_lowest' I n p p_in ord_ge).1.order.toNat - d I) * i.1 := by
+  grind [cancel_lowest']
+
+/-- special case of the reverse inclusion when the order or the power series is at least `d` -/
+private lemma goal_of_ord_ge (p) (p_in : p ∈ I) (ord_ge : d I ≤ p.order) : p ∈ I' I := by
+  by_cases! h : ∃ n, (cancel_lowest' I n p p_in ord_ge).1 = 0
+  · have lt_n := (Nat.le_find_iff h (Nat.find h)).mp (by rfl)
+    have hn := Nat.find_spec h
+    set n := Nat.find h
+    have (i) (i_le : i ≤ n) : (cancel_lowest' I i p p_in ord_ge).1 ∈ I' I := by
+      induction i_le using Nat.decreasingInduction with
+      | of_succ k h ih_mem =>
+        rwa [cancel_lowest'_succ I _ _ p_in ord_ge (lt_n _ h),
+          (I' I).sub_mem_iff_left (by apply c'_sum_mem_I')] at ih_mem
+      | self => simp [hn]
+    simpa using this 0 (by simp)
+  have ne_0 : p ≠ 0 := by simpa using h 0
+  let degFun (n) := (cancel_lowest' I n p p_in ord_ge).1.order.toNat
+  have cancel_lowest'_eq (n) : (cancel_lowest' I n p p_in ord_ge).1 = p - ∑ j ∈ range n,
+    ∑ i, c' I (cancel_lowest' I j p p_in ord_ge).1 (cancel_lowest' I j p p_in ord_ge).2.left
+      (h j) (cancel_lowest' I j p p_in ord_ge).2.right i • X ^ (degFun j - d I) * i.1 := by
+    induction n with
+    | zero => simp [cancel_lowest']
+    | succ n ih =>
+      rw [sum_range_succ, ← sub_sub, ← ih, cancel_lowest'_succ I n p p_in ord_ge (h n)]
+  have degFun_mono : StrictMono degFun := by
+    apply strictMono_nat_of_lt_succ
+    intro n
+    rw [← ENat.coe_lt_coe, ENat.coe_toNat (by simpa [order_eq_top] using h n),
+      ENat.coe_toNat (by simpa [order_eq_top] using h (n + 1)),
+        cancel_lowest'_succ I n p p_in ord_ge (h n)]
+    apply hc'
+  have degFun_ge (n) : d I ≤ degFun n := by
+    trans degFun 0
+    · simp only [ne_eq, univ_eq_attach, Algebra.smul_mul_assoc, dite_not, Nat.recAux_zero,
+        degFun, cancel_lowest']
+      rwa [← ENat.coe_le_coe, ENat.coe_toNat (by simpa [order_eq_top])]
+    exact degFun_mono.le_iff_le.mpr (zero_le _)
+  have res_deg_bij : Function.Bijective (fun n ↦
+    (⟨degFun n, by simp⟩ : {n : ℕ // n ∈ Set.range degFun})) := by
+    constructor
+    · intro
+      simp [degFun_mono.injective.eq_iff]
+    rintro ⟨_, h⟩
+    simpa using h
+  let degEquiv := Equiv.ofBijective _ res_deg_bij
+  let c'_series (i : f I (d I)) : R⟦X⟧ := PowerSeries.mk fun n ↦ if h_in : n + d I ∈ Set.range degFun
+    then c' I (cancel_lowest' I (degEquiv.symm ⟨n + d I, h_in⟩) p p_in ord_ge).1
+      (cancel_lowest' I (degEquiv.symm ⟨n + d I, h_in⟩) p p_in ord_ge).2.left
+        (by apply h) (cancel_lowest' I (degEquiv.symm ⟨n + d I, h_in⟩) p p_in ord_ge).2.right i
+          else 0
+  have p_eq_sum : p = ∑ i, c'_series i * i.1 := by
+    ext n
+    simp only [map_sum, coeff_mul, coeff_mk, c'_series]
+    trans coeff n (∑ j ∈ range (n + 1), ∑ i, c' I (cancel_lowest' I j p p_in ord_ge).1
+      (cancel_lowest' I j p p_in ord_ge).2.left (h j) (cancel_lowest' I j p p_in ord_ge).2.right i •
+        X ^ (degFun j - d I) * i.1)
+    · rw [← sub_eq_zero, ← map_sub, ← cancel_lowest'_eq]
+      apply coeff_of_lt_order
+      induction n with
+      | zero =>
+        simp only [CharP.cast_eq_zero, zero_add, ne_eq, dite_not, Nat.rec_one,
+          ne_0, ↓reduceDIte, cancel_lowest']
+        refine lt_of_le_of_lt (zero_le p.order) ?_
+        apply hc'
+      | succ n ih =>
+        rw [cancel_lowest'_succ I (n + 1) p p_in ord_ge (h (n + 1))]
+        rw [← ENat.add_one_le_iff (by simp)] at ih
+        refine lt_of_le_of_lt ih ?_
+        apply hc'
+    rw [map_sum, ← sum_product', sum_product_right, ← Nat.sum_antidiagonal_swap,
+      Nat.sum_antidiagonal_eq_sum_range_succ_mk, Nat.succ_eq_add_one]
+    simp only [Algebra.smul_mul_assoc, map_sum, map_smul, coeff_mul, coeff_X_pow,
+      ite_mul, one_mul, zero_mul, Nat.sum_antidiagonal_eq_sum_range_succ_mk,
+      Nat.succ_eq_add_one, sum_ite_eq', mem_range, smul_eq_mul, mul_ite, mul_zero,
+      sum_ite_irrel, sum_const_zero, Prod.swap]
+    simp only [sum_ite, not_lt, sum_const_zero, add_zero, Set.mem_range, dite_mul,
+      zero_mul, sum_dite_irrel, sum_dite]
+    rw [← sum_product', sum_product_right]
+    symm
+    rw [← sum_product', sum_product_right]
+    apply sum_congr rfl
+    simp only [univ_eq_attach, mem_attach, forall_const, Subtype.forall]
+    intros
+    let g : { x // x ∈ {x ∈ range (n + 1) | ∃ y, degFun y = n - x + d I} } → ℕ :=
+      fun ⟨x, x_in⟩ ↦ degEquiv.symm ⟨n - x + d I, by
+        have := x_in
+        simp only [mem_filter, mem_range, Set.mem_range] at x_in ⊢
+        exact x_in.right⟩
+    have img_g : filter (fun x => degFun x - d I < n + 1) (range (n + 1)) =
+      image g {x ∈ range (n + 1) | ∃ y, degFun y = n - x + d I}.attach := by
+      ext s
+      simp only [mem_filter, mem_range, mem_image, mem_attach,
+        true_and, Subtype.exists]
+      refine ⟨fun hs ↦ ?_, fun ⟨a, ⟨⟨a_lt, b, hb⟩, hs⟩⟩ ↦ ?_⟩
+      · use n - (degFun s - d I)
+        nth_rw 2 [Nat.lt_add_one_iff] at hs
+        constructor
+        · dsimp only [g]
+          simp_rw [Nat.sub_sub_eq_min, min_eq_right hs.right, Nat.sub_add_cancel (degFun_ge s)]
+          simp [degEquiv]
+        constructor
+        · omega
+        use s
+        rw [Nat.sub_sub_eq_min, min_eq_right hs.right, Nat.sub_add_cancel (degFun_ge s)]
+      dsimp only [g] at hs
+      simp_rw [← hb, degEquiv.symm_apply_eq] at hs
+      simp only [Equiv.ofBijective_apply, Subtype.mk.injEq, degEquiv,
+        degFun_mono.injective.eq_iff] at hs
+      rw [hs] at hb
+      refine ⟨?_, by omega⟩
+      have := degFun_mono.add_le_nat s 0
+      rw [add_zero] at this
+      rw [← @Nat.add_lt_add_iff_right (d I)]
+      calc
+        _ ≤ s + degFun 0 := by
+          simpa using degFun_ge 0
+        _ ≤ _ := this
+        _ < _ := by omega
+    rw [img_g, sum_image]
+    apply sum_congr rfl
+    simp only [mem_attach, forall_const, Subtype.forall, mem_filter,
+      mem_range, forall_and_index, forall_exists_index, g]
+    intro s s_lt t ht
+    congr
+    simp_rw [← ht]
+    simp only [Equiv.ofBijective_symm_apply_apply, degEquiv]
+    specialize degFun_ge t
+    omega
+    · apply Function.Injective.injOn
+      rw [Function.Injective]
+      simp only [EmbeddingLike.apply_eq_iff_eq, Subtype.mk.injEq, Nat.add_right_cancel_iff,
+        Subtype.forall, mem_filter, mem_range, forall_and_index,
+        forall_exists_index, g]
+      grind
+  rw [p_eq_sum]
+  apply (I' I).sum_mem
+  simp only [univ_eq_attach, mem_attach, forall_const, Subtype.forall]
+  intro _ h
+  refine (I' I).mul_mem_left _ (Submodule.mem_span_of_mem ?_)
+  simp only [SetLike.mem_coe, mem_sup, mem_range]
+  use d I
+  simp [h]
+
+omit [Nontrivial R]
+
+/-- The existance lemma for the coefficients in the lowest degree when `p.order` is at most `d I` -/
+private lemma exists_coeffs (p) (h : p ∈ I) (ne_0 : p ≠ 0) :
+    ∃ c : f I p.order.toNat → R , p.order < (p - ∑ i : f I p.order.toNat, c i • i.1).order := by
+  have := aux_coeff_mem I p h ne_0
+  rw [← a_span_I, Ideal.span, Submodule.mem_span_finset'] at this
+  rcases this with ⟨c', hc'⟩
+  use c' ∘ (res_liftEquiv I p.order.toNat).invFun
+  rw [← ENat.add_one_le_iff (by rwa [ne_eq, order_eq_top])]
+  apply le_order
+  intro i i_lt
+  by_cases h' : i = p.order
+  · have : p.order.toNat = i := by
+      by_cases! h'' : i = 0
+      · rw [h'', CharP.cast_eq_zero] at h'
+        simp [← h', h'']
+      rw [ENat.toNat_eq_iff h'', h']
+    rw [← this, map_sub, sub_eq_zero, ← hc', map_sum]
+    refine Fintype.sum_equiv (res_liftEquiv _ _) _ _ ?_
+    simp only [smul_eq_mul, res_liftEquiv, Equiv.invFun_as_coe, Equiv.ofBijective_apply,
+      Function.comp_apply, Equiv.ofBijective_symm_apply_apply, map_smul, Subtype.forall]
+    grind [res_lift, lift_fun, lift_prop_3]
+  rw [map_sub, map_sum, sub_eq_zero, coeff_of_lt_order]
+  symm
+  apply sum_eq_zero
+  simp only [univ_eq_attach, mem_attach, Equiv.invFun_as_coe, Function.comp_apply,
+    map_smul, smul_eq_mul, forall_const, Subtype.forall]
+  intro q q_in
+  rw [coeff_of_lt_order, mul_zero]
+  · simp only [univ_eq_attach, mem_image, mem_attach, true_and,
+      Subtype.exists, f, lift_fun] at q_in
+    rcases q_in with ⟨r, ⟨r_in, hr⟩⟩
+    rw [← hr, lift_prop_2, ENat.coe_toNat (by rwa [ne_eq, order_eq_top])]
+    rw [ENat.lt_add_one_iff (by rwa [ne_eq, order_eq_top])] at i_lt
+    exact Std.lt_of_le_of_ne i_lt h'
+  · rw [ENat.lt_add_one_iff (by rwa [ne_eq, order_eq_top])] at i_lt
+    exact Std.lt_of_le_of_ne i_lt h'
+
+/-- define `c` to be the coefficients of elements in `f i` with i ≤ d such that the
+  linear combination has the same lowest coefficient with `p` -/
+private def c (p) (h : p ∈ I) (ne_0 : p ≠ 0) := choose (exists_coeffs I p h ne_0)
+
+private lemma hc (p) (h : p ∈ I) (ne_0 : p ≠ 0) : p.order <
+    (p - ∑ i, c I p h ne_0 i • i.1).order := choose_spec (exists_coeffs I p h ne_0)
+
+private lemma c_sum_mem_I'_of_ord_le (p) (h : p ∈ I) (ne_0 : p ≠ 0) (ord_le : p.order ≤ d I) :
+    ∑ i, c I p h ne_0 i • i.1 ∈ I' I := by
+  apply (I' I).sum_mem
+  simp only [smul_eq_C_mul, Subtype.forall]
+  intro s s_in
+  simp only [f, univ_eq_attach, mem_image, mem_attach, lift_fun, true_and, Subtype.exists, I',
+    forall_const] at s_in ⊢
+  rcases s_in with ⟨x, ⟨x_in, hx⟩⟩
+  refine Ideal.mul_mem_left _ _ (Submodule.mem_span_of_mem ?_)
+  simp only [SetLike.mem_coe, mem_sup, mem_range, f, univ_eq_attach, mem_image, mem_attach,
+    true_and, Subtype.exists]
+  use p.order.toNat
+  constructor
+  · rwa [Nat.lt_add_one_iff, ← ENat.coe_le_coe, ENat.coe_toNat (by simpa [order_eq_top])]
+  use x
+  use x_in
+  simpa
+
+/-- main formal statement -/
+theorem powerSeries_isNoetherianRing : IsNoetherianRing R⟦X⟧ := by
+  by_cases nontriv : Subsingleton R
+  · rw [← PowerSeries.subsingleton_iff, subsingleton_iff] at nontriv
+    rw [isNoetherianRing_iff_ideal_fg]
+    intro I
+    use {0}
+    ext x
+    simp [nontriv x 0]
+  rw [not_subsingleton_iff_nontrivial] at nontriv
+  refine (isNoetherianRing_iff_ideal_fg _).mpr fun I ↦ ?_
+  use sup (range (d I + 1)) (f I)
+  ext g
+  refine ⟨fun g_in ↦ Set.mem_of_subset_of_mem (I'_le I) g_in, fun g_in ↦ ?_⟩
+  by_cases! ord_g : d I ≤ g.order
+  · exact goal_of_ord_ge I g g_in ord_g
+-- it only remains to prove the goal when the order of the power series is at most `d`
+-- we use linear combinations with coefficients `c` to inductively cancel the lowest degree terms
+-- until the order reaches `d`
+  apply le_of_lt at ord_g
+  let cancel_lowest (n : ℕ) : I := by induction n with
+  | zero => exact ⟨g, g_in⟩
+  | succ n gn =>
+    exact if h : gn.1.order ≤ d I then ⟨gn.1 - ∑ i, c I gn.1 gn.2 (by intro h'; simp [h'] at h)
+      i • i.1, I.sub_mem gn.2 (I'_le I (c_sum_mem_I'_of_ord_le I gn.1 gn.2
+        (by intro h'; simp [h'] at h) h))⟩ else 0
+  have cancel_lowest_succ (n) (ord_le : (cancel_lowest n).1.order ≤ d I) :
+    (cancel_lowest (n + 1)).1 = (cancel_lowest n).1 -
+      ∑ i, c I (cancel_lowest n).1 (cancel_lowest n).2 (by intro h'; simp [h'] at ord_le)
+        i • i.1 := by grind
+  by_cases! h : ∃ n, d I ≤ (cancel_lowest n).1.order
+  · have lt_n := (Nat.le_find_iff h (Nat.find h)).mp (by rfl)
+    have hn := Nat.find_spec h
+    set n := Nat.find h
+    have (i) (i_le : i ≤ n) : (cancel_lowest i).1 ∈ I' I := by
+      induction i_le using Nat.decreasingInduction with
+      | of_succ k h ih_mem =>
+        rwa [cancel_lowest_succ k (le_of_lt (not_le.mp (lt_n _ h))),
+          (I' I).sub_mem_iff_left] at ih_mem
+        · apply c_sum_mem_I'_of_ord_le
+          exact le_of_lt (not_le.mp (lt_n _ h))
+      | self => exact goal_of_ord_ge I _ (cancel_lowest n).2 hn
+    simpa using this 0 (by simp)
+  have ne_0 (n) : cancel_lowest n ≠ 0 := by
+    intro h'
+    specialize h n
+    simp [h'] at h
+  have aux_mono : StrictMono fun n ↦ (cancel_lowest n).1.order.toNat := by
+    apply strictMono_nat_of_lt_succ
+    intro n
+    rw [← ENat.coe_lt_coe, ENat.coe_toNat (by simpa [order_eq_top] using ne_0 n),
+      ENat.coe_toNat (by simpa [order_eq_top] using ne_0 (n + 1)),
+      cancel_lowest_succ n (le_of_lt (h n))]
+    apply hc
+  have := aux_mono.add_le_nat (d I) 0
+  specialize h (d I)
+  rw [add_zero, ← ENat.coe_le_coe, ENat.coe_add,
+    ENat.coe_toNat (by simpa [order_eq_top] using ne_0 0),
+    ENat.coe_toNat (by simpa [order_eq_top] using ne_0 (d I))] at this
+  exfalso
+  revert h
+  rw [imp_false, not_lt]
+  exact le_of_add_le_left this
