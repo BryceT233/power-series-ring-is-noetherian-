@@ -54,10 +54,8 @@ private lemma add_mem_I {a b : R} : a ∈ aux_I_set I n →
   rintro (_ | ⟨f, f_in, f_ord, f_coeff⟩) (_ | ⟨g, g_in, g_ord, g_coeff⟩)
   any_goals grind
   by_cases! h : coeff n (f + g) = 0
-  · left
-    rwa [← f_coeff, ← g_coeff, ← map_add]
-  right
-  use f + g
+  · left; rwa [← f_coeff, ← g_coeff, ← map_add]
+  right; use f + g
   refine ⟨I.add_mem f_in g_in, order_eq_nat.mpr ⟨h, fun i i_lt ↦ ?_⟩, ?_⟩
   · rw [order_eq_nat] at f_ord g_ord
     rw [map_add, f_ord.right i i_lt, g_ord.right i i_lt, zero_add]
@@ -69,8 +67,7 @@ private lemma smul_mem_I (c : R) {x : R} :
   rintro (_ | ⟨f, f_in, f_ord, f_coeff⟩)
   · grind
   rw [or_iff_not_imp_left]
-  intro h
-  use c • f
+  intro h; use c • f
   rw [smul_eq_C_mul]
   refine ⟨I.mul_mem_left (C c) f_in, order_eq_nat.mpr ⟨?_, ?_⟩, ?_⟩
   · rwa [coeff_C_mul, f_coeff]
@@ -126,6 +123,14 @@ private lemma lift_prop_2 (ne_0 : r ≠ 0) (h : r ∈ aux_I I n) :
 private lemma lift_prop_3 (ne_0 : r ≠ 0) (h : r ∈ aux_I I n) :
     coeff n (lift I n r ne_0 h) = r := (choose_spec (aux_exists_lift I n r ne_0 h)).right.right
 
+private lemma aux_coeff_mem (p) (h : p ∈ I) (ne_0 : p ≠ 0) :
+    coeff p.order.toNat p ∈ aux_I I p.order.toNat := by
+  simp only [aux_I, aux_I_set, Set.union_singleton, OrderHom.coe_mk, Submodule.mem_mk,
+      AddSubmonoid.mem_mk, AddSubsemigroup.mem_mk, Set.mem_insert_iff, Set.mem_setOf_eq]
+  right; use p
+  refine ⟨h, Eq.symm (ENat.coe_toNat ?_), rfl⟩
+  rwa [ne_eq, order_eq_top]
+
 variable [IsNoetherianRing R]
 
 /-- apply the noetherian hypothesis on `aux_I I` and define generators `a` -/
@@ -138,7 +143,7 @@ private lemma aux_I_fg : (aux_I I n).FG :=
   ((isNoetherianRing_iff_ideal_fg R).mp inferInstance) (aux_I I n)
 
 private def a : Finset R := (if n ≤ d I then choose (aux_I_fg I n) else
-    choose (aux_I_fg I (d I))) \ {0}
+  choose (aux_I_fg I (d I))) \ {0}
 
 private lemma a_mem_ne_0 (n x) (h : x ∈ a I n) : x ≠ 0 := by
   simp only [mem_sdiff, mem_singleton, a] at h
@@ -191,15 +196,6 @@ private lemma I'_le : I' I ≤ I := by
   rw [← h']
   apply lift_prop_1
 
-omit [IsNoetherianRing R] in
-private lemma aux_coeff_mem (p) (h : p ∈ I) (ne_0 : p ≠ 0) :
-    coeff p.order.toNat p ∈ aux_I I p.order.toNat := by
-  simp only [aux_I, aux_I_set, Set.union_singleton, OrderHom.coe_mk, Submodule.mem_mk,
-      AddSubmonoid.mem_mk, AddSubsemigroup.mem_mk, Set.mem_insert_iff, Set.mem_setOf_eq]
-  right; use p
-  refine ⟨h, Eq.symm (ENat.coe_toNat ?_), rfl⟩
-  rwa [ne_eq, order_eq_top]
-
 variable [Nontrivial R]
 
 /-- the existance lemma for the coefficients in the lowest degree when the order is at least `d I` -/
@@ -226,16 +222,14 @@ private lemma exists_coeffs_of_ord_ge (p) (h : p ∈ I) (ne_0 : p ≠ 0) (ord_ge
     simp only [smul_eq_mul, Equiv.invFun_as_coe, Function.comp_apply, Equiv.symm_apply_apply,
       Algebra.smul_mul_assoc, map_smul, coeff_mul, coeff_X_pow, ite_mul, one_mul, zero_mul,
       Subtype.forall]
-    intro r r_in
-    congr 1
+    intro r r_in; congr
     rw [sum_eq_single_of_mem (p.order.toNat - d I, d I) (by rw [mem_antidiagonal]; grind)]
     simp [res_liftEquiv, res_lift, lift_fun, lift_prop_3]
     · simp only [mem_antidiagonal, ne_eq, Equiv.ofBijective_apply, ite_eq_right_iff,
         Prod.forall, Prod.mk.injEq, not_and, res_liftEquiv, res_lift, lift_fun]
       grind
   rw [map_sub, map_sum, sub_eq_zero, coeff_of_lt_order]
-  symm
-  apply sum_eq_zero
+  symm; apply sum_eq_zero
   simp only [univ_eq_attach, mem_attach, Equiv.invFun_as_coe, Function.comp_apply,
     Algebra.smul_mul_assoc, map_smul, smul_eq_mul, forall_const, Subtype.forall]
   intro q q_in
@@ -365,8 +359,7 @@ private lemma goal_of_ord_ge (p) (p_in : p ∈ I) (ord_ge : d I ≤ p.order) : p
     simp only [sum_ite, not_lt, sum_const_zero, add_zero, Set.mem_range, dite_mul,
       zero_mul, sum_dite_irrel, sum_dite]
     rw [← sum_product', sum_product_right]
-    symm
-    rw [← sum_product', sum_product_right]
+    symm; rw [← sum_product', sum_product_right]
     apply sum_congr rfl
     simp only [univ_eq_attach, mem_attach, forall_const, Subtype.forall]
     intros
@@ -444,8 +437,7 @@ private lemma exists_coeffs (p) (h : p ∈ I) (ne_0 : p ≠ 0) :
       Function.comp_apply, Equiv.ofBijective_symm_apply_apply, map_smul, Subtype.forall]
     grind [res_lift, lift_fun, lift_prop_3]
   rw [map_sub, map_sum, sub_eq_zero, coeff_of_lt_order]
-  symm
-  apply sum_eq_zero
+  symm; apply sum_eq_zero
   simp only [univ_eq_attach, mem_attach, Equiv.invFun_as_coe, Function.comp_apply,
     map_smul, smul_eq_mul, forall_const, Subtype.forall]
   intro q q_in
