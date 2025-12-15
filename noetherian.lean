@@ -281,7 +281,7 @@ private lemma remove_lowest'_succ (n) (p) (p_in : p ∈ I) (ord_ge : d I ≤ p.o
             X ^ ((remove_lowest' I n p p_in ord_ge).1.order.toNat - d I) * i.1 := by
   grind [remove_lowest']
 
-/-- special case of the reverse inclusion when the order or the power series is at least `d` -/
+/-- special case of the reverse inclusion when the order of the power series is at least `d` -/
 private lemma goal_of_ord_ge (p) (p_in : p ∈ I) (ord_ge : d I ≤ p.order) : p ∈ I' I := by
   by_cases! h : ∃ n, (remove_lowest' I n p p_in ord_ge).1 = 0
   · have lt_n := (Nat.le_find_iff h (Nat.find h)).mp (by rfl)
