@@ -24,7 +24,7 @@ proof and use the idea of leading-coefficient ideals.
 
 ## Proof sketch
 
-Given an ideal `I` of `R[[x]]`, for each order `n` let `I n` be the ideal of leading
+Given an ideal `I` of `R[[x]]`, for each order `n` let `aux_I n` be the ideal of leading
 coefficients of series in `I` of order `n`. Since `R` is Noetherian the
 ascending chain `I 0 ⊆ I 1 ⊆ ...` stabilizes; pick `d` with `I d = I (d+1) = ...`.
 Choose finite generators of `a n` for `n ≤ d`. Using these generators and an inductive
