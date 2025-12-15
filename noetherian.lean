@@ -276,10 +276,9 @@ private lemma c'_sum_mem_I' (p) (h : p ∈ I) (ne_0 : p ≠ 0) (ord_ge : d I ≤
   apply Ideal.span_mono
   simp only [Set.subset_def, SetLike.mem_coe, mem_sup, mem_range]
   intro _ h
-  use d I
-  simp [h]
+  use d I; simp [h]
 
-/-- define the operation of canceling the lowest term for a power series `p` in `I`
+/-- define the operation of removing the lowest term for a power series `p` in `I`
   whose order is at least `d I` -/
 private def remove_lowest' (n : ℕ) (p) (p_in : p ∈ I) (ord_ge : d I ≤ p.order) :
     {x : R⟦X⟧ // x ∈ I ∧ d I ≤ x.order} := by
@@ -341,14 +340,13 @@ private lemma goal_of_ord_ge (p) (p_in : p ∈ I) (ord_ge : d I ≤ p.order) : p
     rintro ⟨_, h⟩
     simpa using h
   let degEquiv := Equiv.ofBijective _ res_deg_bij
-  let c'_series (i : f I (d I)) : R⟦X⟧ := PowerSeries.mk fun n ↦ if h_in : n + d I ∈ Set.range degFun
+  let c'_series (i : f I (d I)) : R⟦X⟧ := mk fun n ↦ if h_in : n + d I ∈ Set.range degFun
     then c' I (remove_lowest' I (degEquiv.symm ⟨n + d I, h_in⟩) p p_in ord_ge).1
       (remove_lowest' I (degEquiv.symm ⟨n + d I, h_in⟩) p p_in ord_ge).2.left
         (by apply h) (remove_lowest' I (degEquiv.symm ⟨n + d I, h_in⟩) p p_in ord_ge).2.right i
           else 0
   have p_eq_sum : p = ∑ i, c'_series i * i.1 := by
-    ext n
-    simp only [map_sum, coeff_mul, coeff_mk, c'_series]
+    ext n; simp only [map_sum, coeff_mul, coeff_mk, c'_series]
     trans coeff n (∑ j ∈ range (n + 1), ∑ i, c' I (remove_lowest' I j p p_in ord_ge).1
       (remove_lowest' I j p p_in ord_ge).2.left (h j) (remove_lowest' I j p p_in ord_ge).2.right i •
         X ^ (degFun j - d I) * i.1)
@@ -386,8 +384,7 @@ private lemma goal_of_ord_ge (p) (p_in : p ∈ I) (ord_ge : d I ≤ p.order) : p
         exact x_in.right⟩
     have img_g : filter (fun x => degFun x - d I < n + 1) (range (n + 1)) =
       image g {x ∈ range (n + 1) | ∃ y, degFun y = n - x + d I}.attach := by
-      ext s
-      simp only [mem_filter, mem_range, mem_image, mem_attach,
+      ext s; simp only [mem_filter, mem_range, mem_image, mem_attach,
         true_and, Subtype.exists]
       refine ⟨fun hs ↦ ?_, fun ⟨a, ⟨⟨a_lt, b, hb⟩, hs⟩⟩ ↦ ?_⟩
       · use n - (degFun s - d I)
@@ -418,7 +415,7 @@ private lemma goal_of_ord_ge (p) (p_in : p ∈ I) (ord_ge : d I ≤ p.order) : p
     apply sum_congr rfl
     simp only [mem_attach, forall_const, Subtype.forall, mem_filter,
       mem_range, forall_and_index, forall_exists_index, g]
-    intro s s_lt t ht
+    intro _ _ t ht
     congr
     simp_rw [← ht]
     simp only [Equiv.ofBijective_symm_apply_apply, degEquiv]
@@ -436,8 +433,7 @@ private lemma goal_of_ord_ge (p) (p_in : p ∈ I) (ord_ge : d I ≤ p.order) : p
   intro _ h
   refine (I' I).mul_mem_left _ (Submodule.mem_span_of_mem ?_)
   simp only [SetLike.mem_coe, mem_sup, mem_range]
-  use d I
-  simp [h]
+  use d I; simp [h]
 
 omit [Nontrivial R]
 
@@ -499,8 +495,7 @@ private lemma c_sum_mem_I'_of_ord_le (p) (h : p ∈ I) (ne_0 : p ≠ 0) (ord_le 
   use p.order.toNat
   constructor
   · rwa [Nat.lt_add_one_iff, ← ENat.coe_le_coe, ENat.coe_toNat (by simpa [order_eq_top])]
-  use x
-  use x_in
+  use x; use x_in
   simpa
 
 /-- main formal statement -/
@@ -508,15 +503,12 @@ theorem powerSeries_isNoetherianRing : IsNoetherianRing R⟦X⟧ := by
   by_cases nontriv : Subsingleton R
   · rw [← PowerSeries.subsingleton_iff, subsingleton_iff] at nontriv
     rw [isNoetherianRing_iff_ideal_fg]
-    intro I
-    use {0}
-    ext x
-    simp [nontriv x 0]
+    intro I; use {0}
+    ext x; simp [nontriv x 0]
   rw [not_subsingleton_iff_nontrivial] at nontriv
   refine (isNoetherianRing_iff_ideal_fg _).mpr fun I ↦ ?_
   use sup (range (d I + 1)) (f I)
-  ext g
-  refine ⟨fun g_in ↦ Set.mem_of_subset_of_mem (I'_le I) g_in, fun g_in ↦ ?_⟩
+  ext g; refine ⟨fun g_in ↦ Set.mem_of_subset_of_mem (I'_le I) g_in, fun g_in ↦ ?_⟩
   by_cases! ord_g : d I ≤ g.order
   · exact goal_of_ord_ge I g g_in ord_g
 -- it only remains to prove the goal when the order of the power series is at most `d`
@@ -562,7 +554,6 @@ theorem powerSeries_isNoetherianRing : IsNoetherianRing R⟦X⟧ := by
   rw [add_zero, ← ENat.coe_le_coe, ENat.coe_add,
     ENat.coe_toNat (by simpa [order_eq_top] using ne_0 0),
     ENat.coe_toNat (by simpa [order_eq_top] using ne_0 (d I))] at this
-  exfalso
-  revert h
+  exfalso; revert h
   rw [imp_false, not_lt]
   exact le_of_add_le_left this
