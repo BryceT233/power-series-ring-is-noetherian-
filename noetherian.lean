@@ -84,11 +84,9 @@ private lemma monotone_I {i j} (h : i ≤ j) :
   simp only [Set.union_singleton, Set.subset_def, Set.mem_insert_iff, Set.mem_setOf_eq,
     forall_eq_or_imp, true_or, forall_exists_index, and_imp, true_and, aux_I_set]
   intro r f f_in f_ord f_coeff
-  right
-  use X ^ (j - i) * f
+  right; use X ^ (j - i) * f
   refine ⟨I.mul_mem_left (X ^ (j - i)) f_in, order_eq_nat.mpr ⟨?_, ?_⟩, ?_⟩
-  · nth_rw 1 [show j = i + (j - i) by omega]
-    rw [coeff_X_pow_mul]
+  · nth_rw 1 [show j = i + (j - i) by omega, coeff_X_pow_mul]
     exact (order_eq_nat.mp f_ord).left
   · intro k k_lt
     rw [coeff_mul, sum_eq_zero]
@@ -171,8 +169,8 @@ private def res_lift (n) := fun (s : a I n) ↦
 
 private lemma res_lift_bij : Function.Bijective (res_lift I n) := by
   constructor
-  · simp only [Function.Injective, a, res_lift, lift_fun, lift, Subtype.mk.injEq, Subtype.forall,
-      mem_sdiff, mem_singleton, forall_and_index]
+  · simp only [Function.Injective, a, res_lift, lift_fun, lift, Subtype.mk.injEq,
+      Subtype.forall, mem_sdiff, mem_singleton, forall_and_index]
     grind
   simp [Function.Surjective, a, res_lift, lift_fun, lift, f]
 
@@ -198,14 +196,13 @@ private lemma aux_coeff_mem (p) (h : p ∈ I) (ne_0 : p ≠ 0) :
     coeff p.order.toNat p ∈ aux_I I p.order.toNat := by
   simp only [aux_I, aux_I_set, Set.union_singleton, OrderHom.coe_mk, Submodule.mem_mk,
       AddSubmonoid.mem_mk, AddSubsemigroup.mem_mk, Set.mem_insert_iff, Set.mem_setOf_eq]
-  right
-  use p
+  right; use p
   refine ⟨h, Eq.symm (ENat.coe_toNat ?_), rfl⟩
   rwa [ne_eq, order_eq_top]
 
 variable [Nontrivial R]
 
-/-- the existance lemma for the coefficients in the lowest degree when `p.order` is at least `d I` -/
+/-- the existance lemma for the coefficients in the lowest degree when the order is at least `d I` -/
 private lemma exists_coeffs_of_ord_ge (p) (h : p ∈ I) (ne_0 : p ≠ 0) (ord_ge : d I ≤ p.order) :
     ∃ c : f I (d I) → R , p.order < (p - ∑ i : f I (d I), c i • X ^ (p.order.toNat - (d I)) * i.1).order
       := by
@@ -332,13 +329,10 @@ private lemma goal_of_ord_ge (p) (p_in : p ∈ I) (ord_ge : d I ≤ p.order) : p
         degFun, remove_lowest']
       rwa [← ENat.coe_le_coe, ENat.coe_toNat (by simpa [order_eq_top])]
     exact degFun_mono.le_iff_le.mpr (zero_le _)
-  have res_deg_bij : Function.Bijective (fun n ↦
-    (⟨degFun n, by simp⟩ : {n : ℕ // n ∈ Set.range degFun})) := by
-    constructor
-    · intro
-      simp [degFun_mono.injective.eq_iff]
-    rintro ⟨_, h⟩
-    simpa using h
+  have res_deg_bij : Function.Bijective (fun n ↦ (⟨degFun n, by simp⟩ :
+    {n : ℕ // n ∈ Set.range degFun})) :=
+    ⟨by simp [Function.Injective, degFun_mono.injective.eq_iff],
+    by rintro ⟨_, h⟩; simpa using h⟩
   let degEquiv := Equiv.ofBijective _ res_deg_bij
   let c'_series (i : f I (d I)) : R⟦X⟧ := mk fun n ↦ if h_in : n + d I ∈ Set.range degFun
     then c' I (remove_lowest' I (degEquiv.symm ⟨n + d I, h_in⟩) p p_in ord_ge).1
@@ -386,16 +380,13 @@ private lemma goal_of_ord_ge (p) (p_in : p ∈ I) (ord_ge : d I ≤ p.order) : p
       image g {x ∈ range (n + 1) | ∃ y, degFun y = n - x + d I}.attach := by
       ext s; simp only [mem_filter, mem_range, mem_image, mem_attach,
         true_and, Subtype.exists]
-      refine ⟨fun hs ↦ ?_, fun ⟨a, ⟨⟨a_lt, b, hb⟩, hs⟩⟩ ↦ ?_⟩
-      · use n - (degFun s - d I)
-        nth_rw 2 [Nat.lt_add_one_iff] at hs
+      refine ⟨fun hs ↦ Exists.intro (n - (degFun s - d I)) ?_, fun ⟨a, ⟨⟨_, b, hb⟩, hs⟩⟩ ↦ ?_⟩
+      · nth_rw 2 [Nat.lt_add_one_iff] at hs
         constructor
         · dsimp only [g]
           simp_rw [Nat.sub_sub_eq_min, min_eq_right hs.right, Nat.sub_add_cancel (degFun_ge s)]
           simp [degEquiv]
-        constructor
-        · omega
-        use s
+        refine ⟨by omega, Exists.intro s ?_⟩
         rw [Nat.sub_sub_eq_min, min_eq_right hs.right, Nat.sub_add_cancel (degFun_ge s)]
       dsimp only [g] at hs
       simp_rw [← hb, degEquiv.symm_apply_eq] at hs
@@ -405,12 +396,8 @@ private lemma goal_of_ord_ge (p) (p_in : p ∈ I) (ord_ge : d I ≤ p.order) : p
       refine ⟨?_, by omega⟩
       have := degFun_mono.add_le_nat s 0
       rw [add_zero] at this
-      rw [← @Nat.add_lt_add_iff_right (d I)]
-      calc
-        _ ≤ s + degFun 0 := by
-          simpa using degFun_ge 0
-        _ ≤ _ := this
-        _ < _ := by omega
+      specialize degFun_ge 0
+      omega
     rw [img_g, sum_image]
     apply sum_congr rfl
     simp only [mem_attach, forall_const, Subtype.forall, mem_filter,
@@ -422,9 +409,8 @@ private lemma goal_of_ord_ge (p) (p_in : p ∈ I) (ord_ge : d I ≤ p.order) : p
     specialize degFun_ge t
     omega
     · apply Function.Injective.injOn
-      rw [Function.Injective]
-      simp only [EmbeddingLike.apply_eq_iff_eq, Subtype.mk.injEq, Nat.add_right_cancel_iff,
-        Subtype.forall, mem_filter, mem_range, forall_and_index,
+      simp only [Function.Injective, EmbeddingLike.apply_eq_iff_eq, Subtype.mk.injEq,
+        Nat.add_right_cancel_iff, Subtype.forall, mem_filter, mem_range, forall_and_index,
         forall_exists_index, g]
       grind
   rw [p_eq_sum]
