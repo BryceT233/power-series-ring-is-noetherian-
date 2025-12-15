@@ -149,7 +149,7 @@ private lemma a_mem_ne_0 (n x) (h : x ∈ a I n) : x ≠ 0 := by
   simp only [mem_sdiff, mem_singleton, a] at h
   exact h.right
 
-private lemma a_span_I : Ideal.span (a I n) = aux_I I n := by
+private lemma a_span_aux_I : Ideal.span (a I n) = aux_I I n := by
   dsimp only [a]
   rw [coe_sdiff, coe_singleton, Ideal.span_sdiff_singleton_zero]
   split
@@ -165,7 +165,7 @@ private lemma a_ge_d (n_ge : d I ≤ n) : a I n = a I (d I) := by
 
 /-- lift `a` to finite sets `f` of power series -/
 private def lift_fun (n) : a I n → R⟦X⟧ := fun ⟨r, hr⟩ ↦ lift I n r (a_mem_ne_0 I n r hr)
-  (by rw [← a_span_I]; exact Set.mem_of_subset_of_mem Ideal.subset_span hr)
+  (by rw [← a_span_aux_I]; exact Set.mem_of_subset_of_mem Ideal.subset_span hr)
 
 private def f (m : ℕ) : Finset R⟦X⟧ := image (lift_fun I m) univ
 
@@ -205,7 +205,7 @@ private lemma exists_coeffs_of_ord_ge (p) (h : p ∈ I) (ne_0 : p ≠ 0) (ord_ge
   have := aux_coeff_mem I p h ne_0
   apply ENat.toNat_le_toNat at ord_ge
   simp only [ne_eq, order_eq_top, ne_0, not_false_eq_true, ENat.toNat_coe, forall_const] at ord_ge
-  rw [← hd I _ ord_ge, ← a_span_I, Ideal.span, Submodule.mem_span_finset'] at this
+  rw [← hd I _ ord_ge, ← a_span_aux_I, Ideal.span, Submodule.mem_span_finset'] at this
   rcases this with ⟨c', hc'⟩
   use c' ∘ (res_liftEquiv I (d I)).invFun
   rw [← ENat.add_one_le_iff (by rwa [ne_eq, order_eq_top])]
@@ -419,7 +419,7 @@ omit [Nontrivial R]
 private lemma exists_coeffs (p) (h : p ∈ I) (ne_0 : p ≠ 0) :
     ∃ c : f I p.order.toNat → R , p.order < (p - ∑ i : f I p.order.toNat, c i • i.1).order := by
   have := aux_coeff_mem I p h ne_0
-  rw [← a_span_I, Ideal.span, Submodule.mem_span_finset'] at this
+  rw [← a_span_aux_I, Ideal.span, Submodule.mem_span_finset'] at this
   rcases this with ⟨c', hc'⟩
   use c' ∘ (res_liftEquiv I p.order.toNat).invFun
   rw [← ENat.add_one_le_iff (by rwa [ne_eq, order_eq_top])]
