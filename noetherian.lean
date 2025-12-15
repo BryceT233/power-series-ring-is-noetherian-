@@ -203,8 +203,7 @@ private lemma exists_coeffs_of_ord_ge (p) (h : p ∈ I) (ne_0 : p ≠ 0) (ord_ge
   rcases this with ⟨c', hc'⟩
   use c' ∘ (res_liftEquiv I (d I)).invFun
   rw [← ENat.add_one_le_iff (by rwa [ne_eq, order_eq_top])]
-  apply le_order
-  intro i i_lt
+  refine le_order _ _ (fun i i_lt => ?_)
   by_cases h' : i = p.order
   · have : p.order.toNat = i := by
       by_cases! h'' : i = 0
@@ -305,11 +304,10 @@ private lemma goal_of_ord_ge (p) (p_in : p ∈ I) (ord_ge : d I ≤ p.order) : p
     | succ n ih =>
       rw [sum_range_succ, ← sub_sub, ← ih, remove_lowest'_succ I n p p_in ord_ge (h n)]
   have degFun_mono : StrictMono degFun := by
-    apply strictMono_nat_of_lt_succ
-    intro n
+    refine strictMono_nat_of_lt_succ (fun n => ?_)
     rw [← ENat.coe_lt_coe, ENat.coe_toNat (by simpa [order_eq_top] using h n),
       ENat.coe_toNat (by simpa [order_eq_top] using h (n + 1)),
-        remove_lowest'_succ I n p p_in ord_ge (h n)]
+      remove_lowest'_succ I n p p_in ord_ge (h n)]
     apply hc'
   have degFun_ge (n) : d I ≤ degFun n := by
     trans degFun 0
@@ -417,8 +415,7 @@ private lemma exists_coeffs (p) (h : p ∈ I) (ne_0 : p ≠ 0) :
   rcases this with ⟨c', hc'⟩
   use c' ∘ (res_liftEquiv I p.order.toNat).invFun
   rw [← ENat.add_one_le_iff (by rwa [ne_eq, order_eq_top])]
-  apply le_order
-  intro i i_lt
+  refine le_order _ _ (fun i i_lt => ?_)
   by_cases h' : i = p.order
   · have : p.order.toNat = i := by
       by_cases! h'' : i = 0
@@ -513,8 +510,7 @@ theorem powerSeries_isNoetherianRing : IsNoetherianRing R⟦X⟧ := by
     specialize h n
     simp [h'] at h
   have aux_mono : StrictMono fun n ↦ (remove_lowest n).1.order.toNat := by
-    apply strictMono_nat_of_lt_succ
-    intro n
+    refine strictMono_nat_of_lt_succ (fun n => ?_)
     rw [← ENat.coe_lt_coe, ENat.coe_toNat (by simpa [order_eq_top] using ne_0 n),
       ENat.coe_toNat (by simpa [order_eq_top] using ne_0 (n + 1)),
       remove_lowest_succ n (le_of_lt (h n))]
