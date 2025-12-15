@@ -329,9 +329,8 @@ private lemma goal_of_ord_ge (p) (p_in : p ∈ I) (ord_ge : d I ≤ p.order) : p
         degFun, remove_lowest']
       rwa [← ENat.coe_le_coe, ENat.coe_toNat (by simpa [order_eq_top])]
     exact degFun_mono.le_iff_le.mpr (zero_le _)
-  have res_deg_bij : Function.Bijective (fun n ↦ (⟨degFun n, by simp⟩ :
-    {n : ℕ // n ∈ Set.range degFun})) :=
-    ⟨by simp [Function.Injective, degFun_mono.injective.eq_iff],
+  have res_deg_bij : Function.Bijective fun n ↦ (⟨degFun n, by simp⟩ : {n // n ∈ Set.range degFun})
+    := ⟨by simp [Function.Injective, degFun_mono.injective.eq_iff],
     by rintro ⟨_, h⟩; simpa using h⟩
   let degEquiv := Equiv.ofBijective _ res_deg_bij
   let c'_series (i : f I (d I)) : R⟦X⟧ := mk fun n ↦ if h_in : n + d I ∈ Set.range degFun
@@ -500,7 +499,6 @@ theorem powerSeries_isNoetherianRing : IsNoetherianRing R⟦X⟧ := by
 -- it only remains to prove the goal when the order of the power series is at most `d`
 -- we use linear combinations with coefficients `c` to inductively remove the lowest degree terms
 -- until the order reaches `d`
-  apply le_of_lt at ord_g
   let remove_lowest (n : ℕ) : I := by induction n with
   | zero => exact ⟨g, g_in⟩
   | succ n gn =>
