@@ -157,12 +157,6 @@ private lemma a_span_aux_I : Ideal.span (a I n) = aux_I I n := by
   rw [← hd I n (by grind)]
   exact choose_spec (aux_I_fg I (d I))
 
-private lemma a_ge_d (n_ge : d I ≤ n) : a I n = a I (d I) := by
-  rw [le_iff_eq_or_lt] at n_ge
-  rcases n_ge with h|h
-  · rw [h]
-  simp [a, ite_cond_eq_false _ _ (show (n ≤ d I) = False by grind)]
-
 /-- lift `a` to finite sets `f` of power series -/
 private def lift_fun (n) : a I n → R⟦X⟧ := fun ⟨r, hr⟩ ↦ lift I n r (a_mem_ne_0 I n r hr)
   (by rw [← a_span_aux_I]; exact Set.mem_of_subset_of_mem Ideal.subset_span hr)
