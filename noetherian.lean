@@ -17,7 +17,7 @@ This file proves that the formal power series ring over a Noetherian
 base ring is Noetherian. The argument follows the standard commutative-algebra
 proof and use the idea of leading-coefficient ideals.
 
-## Main statements
+## Main statement
 
 * `powerSeries_isNoetherianRing` :
   If `R` is Noetherian, then `PowerSeries R` is Noetherian.
