@@ -79,7 +79,7 @@ private lemma euclidean_alg_succ (f : MvPowerSeries (Fin (n + 1)) R) (k) :
   | zero => simp [euclidean_alg]
   | succ k ih => rw [euclidean_alg.eq_2, ih, euclidean_alg.eq_2]
 
-/-- a helper lemma for proving the left inverse -/
+/-- a helper lemma for proving the right inverse -/
 private lemma aux_euclidean_alg (f : MvPowerSeries (Fin (n + 1)) R) (x : Fin (n + 1) →₀ ℕ) :
     (coeff (aux_init n x)) (euclidean_alg n f (x (Fin.last n))).1 = (coeff x) f := by
   generalize ht : x (Fin.last n) = t
@@ -92,7 +92,8 @@ private lemma aux_euclidean_alg (f : MvPowerSeries (Fin (n + 1)) R) (x : Fin (n 
   | succ t ih =>
     intro f x ht
     nth_rw 2 [← rmd_add_X_last_mul_quotient n f]
-    simp [coeff_mul, coeff_X, sum_ite]
+    simp only [map_add, coeff_mul, coeff_X, ite_mul, one_mul, zero_mul, sum_ite, sum_const_zero,
+      add_zero]
     have : filter (fun x ↦ x.1 = fun₀ | Fin.last n => 1) (antidiagonal x) =
       {(fun₀ | Fin.last n => 1, x - fun₀ | Fin.last n => 1)} := by
       simp only [Finsupp.ext_iff, Finset.ext_iff, mem_filter, mem_antidiagonal, Finsupp.coe_add,
@@ -119,12 +120,12 @@ private lemma coeff_finSuccInvFun_apply (f : PowerSeries (MvPowerSeries (Fin n) 
     (x : Fin (n + 1) →₀ ℕ) : coeff x (finSuccInvFun n f) =
       coeff (aux_init n x) (PowerSeries.coeff (x (Fin.last n)) f) := rfl
 
-/-- a helper lemma for proving the right inverse -/
+/-- a helper lemma for proving the left inverse -/
 private lemma euclidean_alg_finSuccInvFun {k} (f : PowerSeries (MvPowerSeries (Fin n) R)) :
     (euclidean_alg n (finSuccInvFun n f) k).1 = (PowerSeries.coeff k) f := by
   revert f; induction k with
   | zero =>
-    intro f; ext x
+    intro; ext
     simp only [euclidean_alg, coeff_rmdPred_apply, coeff_finSuccInvFun_apply, init_comp_snoc]
     congr; simp [aux_snoc]
   | succ k ih =>
@@ -141,8 +142,7 @@ private lemma euclidean_alg_finSuccInvFun {k} (f : PowerSeries (MvPowerSeries (F
     rw [← sub_eq_zero, ← mul_left_mem_nonZeroDivisors_eq_zero_iff this, mul_sub, sub_eq_zero]
     replace this := rmd_add_X_last_mul_quotient n (finSuccInvFun n f)
     rw [← eq_sub_iff_add_eq'] at this
-    rw [this]
-    ext x
+    rw [this]; ext x
     simp only [map_sub, coeff_finSuccInvFun_apply, coeff_embSucc_apply, coeff_rmdPred_apply,
       snoc_comp_init, Finsupp.erase_same, PowerSeries.coeff_zero_eq_constantCoeff, coeff_mul,
       coeff_X, PowerSeries.coeff_mk, ite_mul, one_mul, zero_mul, sum_ite, sum_const_zero, add_zero]
@@ -218,30 +218,37 @@ private lemma finSuccInvFun_mul (f g : PowerSeries (MvPowerSeries (Fin n) R)) :
     have : i.1 ≠ n := by grind
     grind [h2 ⟨i.1, by omega⟩]
 
-private lemma left_inv : Function.LeftInverse (finSuccInvFun n) (@finSuccFun R _ n) := by
-  intro f; ext x
-  rw [coeff_finSuccInvFun_apply, coeff_finSuccFun_apply, aux_euclidean_alg]
-
-private lemma right_inv : Function.RightInverse (finSuccInvFun n) (@finSuccFun R _ n) := by
-  intro f; ext k x
-  rw [coeff_finSuccFun_apply, euclidean_alg_finSuccInvFun]
-
 def finSuccInvAlgEquiv : PowerSeries (MvPowerSeries (Fin n) R) ≃ₐ[R] MvPowerSeries (Fin (n + 1)) R := {
   toFun := finSuccInvFun n
   invFun := finSuccFun n
-  left_inv := right_inv n
-  right_inv := left_inv n
+  left_inv := by
+    intro; ext
+    rw [coeff_finSuccFun_apply, euclidean_alg_finSuccInvFun]
+  right_inv := by
+    intro; ext
+    rw [coeff_finSuccInvFun_apply, coeff_finSuccFun_apply, aux_euclidean_alg]
   map_mul' := finSuccInvFun_mul n
   map_add' := by simp [MvPowerSeries.ext_iff, coeff_finSuccInvFun_apply]
   commutes' := finSuccInvFun_commute n
 }
 
-def MvPowerSeries.isEmptyAlgEquiv {σ} [IsEmpty σ] : MvPowerSeries σ R ≃ₐ[R] R := sorry
+def MvPowerSeries.isEmptyAlgEquiv {σ} [IsEmpty σ] : MvPowerSeries σ R ≃ₐ[R] R := {
+  toFun := constantCoeff
+  invFun := C
+  left_inv := by
+    intro; ext x
+    rw [Subsingleton.eq_zero x]
+    simp
+  right_inv := by intro; simp
+  map_mul' := by simp
+  map_add' := by simp
+  commutes' := fun r => Eq.symm (RingHom.congr_arg (algebraMap R R) rfl)
+}
 
 theorem MvPowerSeries.isNoetherianRing_fin [IsNoetherianRing R] :
     IsNoetherianRing (MvPowerSeries (Fin n) R) := by
   induction n with
   | zero =>
     exact isNoetherianRing_of_ringEquiv _ MvPowerSeries.isEmptyAlgEquiv.symm.toRingEquiv
-  | succ n ih =>
+  | succ n _ =>
     exact isNoetherianRing_of_ringEquiv _ (finSuccInvAlgEquiv n).toRingEquiv
