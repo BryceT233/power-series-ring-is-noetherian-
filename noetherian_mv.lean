@@ -14,15 +14,15 @@ open MvPowerSeries Finset Finsupp
 variable {R : Type*} [CommRing R]
 variable (n : ℕ)
 
-/-- define `aux_init` to be the function of taking the first n components a monomial
-`x : Fin (n + 1) →₀ ℕ` -/
+-- define `aux_init` to be the function of taking the first n components a monomial
+-- `x : Fin (n + 1) →₀ ℕ`
 private def aux_init (x : Fin (n + 1) →₀ ℕ) : Fin n →₀ ℕ :=
   equivFunOnFinite.symm (Fin.init x)
 
 private lemma aux_init_zero : aux_init n 0 = 0 := by
   simp [Finsupp.ext_iff, aux_init, Fin.init]
 
-/-- define `aux_snoc` to be the function of adding a 0 at the end of a monomial `x : Fin n →₀ ℕ` -/
+-- define `aux_snoc` to be the function of adding a 0 at the end of a monomial `x : Fin n →₀ ℕ`
 private def aux_snoc (x : Fin n →₀ ℕ) : Fin (n + 1) →₀ ℕ :=
   equivFunOnFinite.symm (Fin.snoc x 0)
 
@@ -36,24 +36,24 @@ private lemma snoc_comp_init (x : Fin (n + 1) →₀ ℕ) :
     dite_eq_ite, coe_mk]
   grind
 
-/-- `aux_snoc` induces a function `rmdPredFun` from `MvPowerSeries (Fin (n + 1)) R` to
-`MvPowerSeries (Fin n) R`-/
+-- `aux_snoc` induces a function `rmdPredFun` from `MvPowerSeries (Fin (n + 1)) R` to
+-- `MvPowerSeries (Fin n) R`
 private def rmdPredFun (f : MvPowerSeries (Fin (n + 1)) R) : MvPowerSeries (Fin n) R :=
   fun x ↦ coeff (aux_snoc n x) f
 
 private lemma coeff_rmdPred_apply (f : MvPowerSeries (Fin (n + 1)) R) (x : Fin n →₀ ℕ) :
     coeff x (rmdPredFun n f) = coeff (aux_snoc n x) f := rfl
 
-/-- `aux_init` induces a function `embSuccFun` from `MvPowerSeries (Fin n) R` to
-`MvPowerSeries (Fin (n + 1)) R`-/
+-- `aux_init` induces a function `embSuccFun` from `MvPowerSeries (Fin n) R` to
+-- `MvPowerSeries (Fin (n + 1)) R`
 private def embSuccFun (f : MvPowerSeries (Fin n) R) : MvPowerSeries (Fin (n + 1)) R :=
   fun x ↦ if x (Fin.last n) = 0 then coeff (aux_init n x) f else 0
 
 private lemma coeff_embSucc_apply (f : MvPowerSeries (Fin n) R) (x : Fin (n + 1) →₀ ℕ) :
     coeff x (embSuccFun n f) = if x (Fin.last n) = 0 then coeff (aux_init n x) f else 0 := rfl
 
-/- prove that `X (Fin.last n)` divides `f - embSuccFun n (rmdPredFun n f)` and
-define the quotient to be `quotient_by_X_last` -/
+-- prove that `X (Fin.last n)` divides `f - embSuccFun n (rmdPredFun n f)` and
+-- define the quotient to be `quotient_by_X_last`
 private lemma X_last_dvd_sub_comp (f : MvPowerSeries (Fin (n + 1)) R) :
     X (Fin.last n) ∣ f - embSuccFun n (rmdPredFun n f) := by
   refine X_dvd_iff.mpr (fun x hx ↦ ?_)
@@ -69,6 +69,7 @@ private lemma rmd_add_X_last_mul_quotient (f : MvPowerSeries (Fin (n + 1)) R) :
     embSuccFun n (rmdPredFun n f) + X (Fin.last n) * quotient_by_X_last n f = f := by
   grind [quotient_by_X_last, Exists.choose_spec (X_last_dvd_sub_comp n f)]
 
+-- define the euclidean algorithm of a power series `f` divided by `X (Fin.last n)`
 private def euclidean_alg (f : MvPowerSeries (Fin (n + 1)) R) :
     ℕ → MvPowerSeries (Fin n) R × MvPowerSeries (Fin (n + 1)) R
   | 0 => (rmdPredFun n f, quotient_by_X_last n f)
@@ -80,7 +81,7 @@ private lemma euclidean_alg_succ (f : MvPowerSeries (Fin (n + 1)) R) (k) :
   | zero => simp [euclidean_alg]
   | succ k ih => rw [euclidean_alg.eq_2, ih, euclidean_alg.eq_2]
 
-/-- a helper lemma for proving the right inverse -/
+-- a helper lemma for proving the right inverse
 private lemma aux_euclidean_alg (f : MvPowerSeries (Fin (n + 1)) R) (x : Fin (n + 1) →₀ ℕ) :
     (coeff (aux_init n x)) (euclidean_alg n f (x (Fin.last n))).1 = (coeff x) f := by
   generalize ht : x (Fin.last n) = t
@@ -107,12 +108,16 @@ private lemma aux_euclidean_alg (f : MvPowerSeries (Fin (n + 1)) R) (x : Fin (n 
     · apply euclidean_alg_succ
     all_goals simp [ht]
 
+-- use `euclidean_alg` to define a function from `MvPowerSeries (Fin (n + 1)) R` to
+--- `MvPowerSeries (Fin n) R`
 private def finSuccFun (f : MvPowerSeries (Fin (n + 1)) R) :
     PowerSeries (MvPowerSeries (Fin n) R) := PowerSeries.mk fun k => (euclidean_alg n f k).1
 
 private lemma coeff_finSuccFun_apply (f : MvPowerSeries (Fin (n + 1)) R) (k : ℕ) :
     PowerSeries.coeff k (finSuccFun n f) = (euclidean_alg n f k).1 := by simp [finSuccFun]
 
+/-- The natural function from `PowerSeries (MvPowerSeries (Fin n) R)` to
+`MvPowerSeries (Fin (n + 1)) R`-/
 private def finSuccInvFun (f : PowerSeries (MvPowerSeries (Fin n) R)) :
     MvPowerSeries (Fin (n + 1)) R :=
   fun x ↦ coeff (aux_init n x) (PowerSeries.coeff (x (Fin.last n)) f)
@@ -121,7 +126,7 @@ private lemma coeff_finSuccInvFun_apply (f : PowerSeries (MvPowerSeries (Fin n) 
     (x : Fin (n + 1) →₀ ℕ) : coeff x (finSuccInvFun n f) =
       coeff (aux_init n x) (PowerSeries.coeff (x (Fin.last n)) f) := rfl
 
-/-- a helper lemma for proving the left inverse -/
+-- a helper lemma for proving the left inverse
 private lemma euclidean_alg_finSuccInvFun {k} (f : PowerSeries (MvPowerSeries (Fin n) R)) :
     (euclidean_alg n (finSuccInvFun n f) k).1 = (PowerSeries.coeff k) f := by
   revert f; induction k with
@@ -165,6 +170,7 @@ private lemma euclidean_alg_finSuccInvFun {k} (f : PowerSeries (MvPowerSeries (F
     simp [aux_init, funext_iff, Fin.init]
     · simp
 
+-- `finSuccInvFun` commutes with the algebra structures
 private lemma finSuccInvFun_commute (r : R) :
     finSuccInvFun n ((algebraMap R (PowerSeries (MvPowerSeries (Fin n) R))) r) =
       (algebraMap R (MvPowerSeries (Fin (n + 1)) R)) r := by
@@ -183,6 +189,7 @@ private lemma finSuccInvFun_commute (r : R) :
       have : i.1 ≠ n := by grind
       use ⟨i.1, by omega⟩
 
+-- `finSuccInvFun` is multiplicative
 private lemma finSuccInvFun_mul (f g : PowerSeries (MvPowerSeries (Fin n) R)) :
     finSuccInvFun n (f * g) = finSuccInvFun n f * finSuccInvFun n g := by
   ext x
@@ -219,6 +226,8 @@ private lemma finSuccInvFun_mul (f g : PowerSeries (MvPowerSeries (Fin n) R)) :
     have : i.1 ≠ n := by grind
     grind [h2 ⟨i.1, by omega⟩]
 
+-- use what we have proved so far to define an algebra isomorphism from
+-- `PowerSeries (MvPowerSeries (Fin n) R)` to `MvPowerSeries (Fin (n + 1)) R`
 def finSuccInvAlgEquiv : PowerSeries (MvPowerSeries (Fin n) R) ≃ₐ[R] MvPowerSeries (Fin (n + 1)) R := {
   toFun := finSuccInvFun n
   invFun := finSuccFun n
@@ -233,6 +242,8 @@ def finSuccInvAlgEquiv : PowerSeries (MvPowerSeries (Fin n) R) ≃ₐ[R] MvPower
   commutes' := finSuccInvFun_commute n
 }
 
+/-- The algebra isomorphism between multivariable power series in no variables
+and the ground ring. -/
 def MvPowerSeries.isEmptyAlgEquiv {σ} [IsEmpty σ] : MvPowerSeries σ R ≃ₐ[R] R := {
   toFun := constantCoeff
   invFun := C
