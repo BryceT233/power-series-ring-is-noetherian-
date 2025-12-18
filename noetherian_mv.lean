@@ -109,7 +109,7 @@ private lemma aux_euclidean_alg (f : MvPowerSeries (Fin (n + 1)) R) (x : Fin (n 
     all_goals simp [ht]
 
 -- use `euclidean_alg` to define a function from `MvPowerSeries (Fin (n + 1)) R` to
---- `MvPowerSeries (Fin n) R`
+-- `MvPowerSeries (Fin n) R`
 private def finSuccFun (f : MvPowerSeries (Fin (n + 1)) R) :
     PowerSeries (MvPowerSeries (Fin n) R) := PowerSeries.mk fun k => (euclidean_alg n f k).1
 
@@ -178,14 +178,14 @@ private lemma finSuccInvFun_commute (r : R) :
   simp only [MvPowerSeries.algebraMap_apply, Algebra.algebraMap_self, RingHom.id_apply,
     MvPowerSeries.ext_iff, coeff_finSuccInvFun_apply, PowerSeries.coeff_C, coeff_C]
   intro x
-  split_ifs with h h' h''
+  split_ifs with _ h
   any_goals grind
-  · simp [h', aux_init_zero]
+  · simp [h, aux_init_zero]
   · rw [coeff_C, ite_cond_eq_false]
     · simp only [Finsupp.ext_iff, Finsupp.coe_zero, Pi.zero_apply, not_forall, aux_init,
         equivFunOnFinite_symm_apply_toFun, Fin.init, Fin.castSucc, Fin.castAdd, Fin.castLE,
-        eq_iff_iff, iff_false] at h' ⊢
-      rcases h' with ⟨i, _⟩
+        eq_iff_iff, iff_false] at h ⊢
+      rcases h with ⟨i, _⟩
       have : i.1 ≠ n := by grind
       use ⟨i.1, by omega⟩
 
