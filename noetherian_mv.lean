@@ -4,11 +4,12 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Bingyu Xia
 -/
 
-import Mathlib
+import Mathlib.Algebra.Lie.OfAssociative
+import Mathlib.RingTheory.PowerSeries.Ideal
 
 suppress_compilation
 
-open MvPowerSeries Finset
+open MvPowerSeries Finset Finsupp
 
 variable {R : Type*} [CommRing R]
 variable (n : ℕ)
@@ -16,23 +17,23 @@ variable (n : ℕ)
 /-- define `aux_init` to be the function of taking the first n components a monomial
 `x : Fin (n + 1) →₀ ℕ` -/
 private def aux_init (x : Fin (n + 1) →₀ ℕ) : Fin n →₀ ℕ :=
-  Finsupp.equivFunOnFinite.symm (Fin.init x)
+  equivFunOnFinite.symm (Fin.init x)
 
 private lemma aux_init_zero : aux_init n 0 = 0 := by
   simp [Finsupp.ext_iff, aux_init, Fin.init]
 
 /-- define `aux_snoc` to be the function of adding a 0 at the end of a monomial `x : Fin n →₀ ℕ` -/
 private def aux_snoc (x : Fin n →₀ ℕ) : Fin (n + 1) →₀ ℕ :=
-  Finsupp.equivFunOnFinite.symm (Fin.snoc x 0)
+  equivFunOnFinite.symm (Fin.snoc x 0)
 
 private lemma init_comp_snoc (x : Fin n →₀ ℕ) : (aux_init n) (aux_snoc n x) = x := by
   simp [aux_init, aux_snoc]
 
 private lemma snoc_comp_init (x : Fin (n + 1) →₀ ℕ) :
     (aux_snoc n) (aux_init n x) = x.erase (Fin.last n) := by
-  simp only [aux_snoc, aux_init, Finsupp.coe_equivFunOnFinite_symm, Finsupp.erase, Finsupp.ext_iff,
-    Finsupp.equivFunOnFinite_symm_apply_toFun, Fin.snoc, Fin.castSucc_castLT, Fin.init, cast_eq,
-    dite_eq_ite, Finsupp.coe_mk]
+  simp only [aux_snoc, aux_init, coe_equivFunOnFinite_symm, Finsupp.erase, Finsupp.ext_iff,
+    equivFunOnFinite_symm_apply_toFun, Fin.snoc, Fin.castSucc_castLT, Fin.init, cast_eq,
+    dite_eq_ite, coe_mk]
   grind
 
 /-- `aux_snoc` induces a function `rmdPredFun` from `MvPowerSeries (Fin (n + 1)) R` to
@@ -94,10 +95,10 @@ private lemma aux_euclidean_alg (f : MvPowerSeries (Fin (n + 1)) R) (x : Fin (n 
     nth_rw 2 [← rmd_add_X_last_mul_quotient n f]
     simp only [map_add, coeff_mul, coeff_X, ite_mul, one_mul, zero_mul, sum_ite, sum_const_zero,
       add_zero]
-    have : filter (fun x ↦ x.1 = fun₀ | Fin.last n => 1) (antidiagonal x) =
-      {(fun₀ | Fin.last n => 1, x - fun₀ | Fin.last n => 1)} := by
+    have : filter (fun x ↦ x.1 = single (Fin.last n) 1) (antidiagonal x) =
+      {(single (Fin.last n) 1, x - single (Fin.last n) 1)} := by
       simp only [Finsupp.ext_iff, Finset.ext_iff, mem_filter, mem_antidiagonal, Finsupp.coe_add,
-        Pi.add_apply, mem_singleton, Prod.forall, Prod.mk.injEq, Finsupp.coe_tsub, Pi.sub_apply]
+        Pi.add_apply, mem_singleton, Prod.forall, Prod.mk.injEq, coe_tsub, Pi.sub_apply]
       grind
     simp only [this, sum_singleton, coeff_embSucc_apply]
     rw [ite_cond_eq_false, zero_add, ← ih]
@@ -144,21 +145,21 @@ private lemma euclidean_alg_finSuccInvFun {k} (f : PowerSeries (MvPowerSeries (F
     rw [← eq_sub_iff_add_eq'] at this
     rw [this]; ext x
     simp only [map_sub, coeff_finSuccInvFun_apply, coeff_embSucc_apply, coeff_rmdPred_apply,
-      snoc_comp_init, Finsupp.erase_same, PowerSeries.coeff_zero_eq_constantCoeff, coeff_mul,
+      snoc_comp_init, erase_same, PowerSeries.coeff_zero_eq_constantCoeff, coeff_mul,
       coeff_X, PowerSeries.coeff_mk, ite_mul, one_mul, zero_mul, sum_ite, sum_const_zero, add_zero]
     split_ifs with h
-    · have : filter (fun x ↦ x.1 = fun₀ | Fin.last n => 1) (antidiagonal x) = ∅ := by
+    · have : filter (fun x ↦ x.1 = single (Fin.last n) 1) (antidiagonal x) = ∅ := by
         simp only [Finsupp.ext_iff, Finset.ext_iff, mem_filter, mem_antidiagonal, Finsupp.coe_add,
           Pi.add_apply, notMem_empty, iff_false, not_and, not_forall, Prod.forall]
         grind
       simp [this, h]
-    have : filter (fun x ↦ x.1 = fun₀ | Fin.last n => 1) (antidiagonal x) =
-      {(fun₀ | Fin.last n => 1, x - fun₀ | Fin.last n => 1)} := by
+    have : filter (fun x ↦ x.1 = single (Fin.last n) 1) (antidiagonal x) =
+      {(single (Fin.last n) 1, x - single (Fin.last n) 1)} := by
       simp only [Finsupp.ext_iff, Finset.ext_iff, mem_filter, mem_antidiagonal, Finsupp.coe_add,
-        Pi.add_apply, mem_singleton, Prod.forall, Prod.mk.injEq, Finsupp.coe_tsub, Pi.sub_apply]
+        Pi.add_apply, mem_singleton, Prod.forall, Prod.mk.injEq, coe_tsub, Pi.sub_apply]
       grind
-    simp only [sub_zero, this, sum_singleton, Finsupp.coe_tsub, Pi.sub_apply,
-      Finsupp.single_eq_same]
+    simp only [sub_zero, this, sum_singleton, coe_tsub, Pi.sub_apply,
+      single_eq_same]
     rw [Nat.sub_add_cancel (by omega)]
     congr 2
     simp [aux_init, funext_iff, Fin.init]
@@ -176,7 +177,7 @@ private lemma finSuccInvFun_commute (r : R) :
   · simp [h', aux_init_zero]
   · rw [coeff_C, ite_cond_eq_false]
     · simp only [Finsupp.ext_iff, Finsupp.coe_zero, Pi.zero_apply, not_forall, aux_init,
-        Finsupp.equivFunOnFinite_symm_apply_toFun, Fin.init, Fin.castSucc, Fin.castAdd, Fin.castLE,
+        equivFunOnFinite_symm_apply_toFun, Fin.init, Fin.castSucc, Fin.castAdd, Fin.castLE,
         eq_iff_iff, iff_false] at h' ⊢
       rcases h' with ⟨i, _⟩
       have : i.1 ≠ n := by grind
@@ -192,14 +193,14 @@ private lemma finSuccInvFun_mul (f g : PowerSeries (MvPowerSeries (Fin n) R)) :
     antidiagonal (aux_init n x) := by
     simp only [aux_init, Finset.ext_iff, mem_image, mem_antidiagonal, Finsupp.ext_iff,
       Finsupp.coe_add, Pi.add_apply, Prod.exists, mem_product,
-      Finsupp.equivFunOnFinite_symm_apply_toFun, Fin.init, Fin.castSucc, Fin.castAdd, Fin.castLE,
+      equivFunOnFinite_symm_apply_toFun, Fin.init, Fin.castSucc, Fin.castAdd, Fin.castLE,
       Prod.forall, Prod.mk.injEq, e]
     intro u v a b
     constructor
     · grind
     rintro ⟨h1, h2⟩
-    use Finsupp.equivFunOnFinite.symm (Fin.snoc a u), Finsupp.equivFunOnFinite.symm (Fin.snoc b v)
-    simp only [Finsupp.equivFunOnFinite_symm_apply_toFun, Fin.snoc, Fin.castLT, Fin.castSucc_mk,
+    use equivFunOnFinite.symm (Fin.snoc a u), equivFunOnFinite.symm (Fin.snoc b v)
+    simp only [equivFunOnFinite_symm_apply_toFun, Fin.snoc, Fin.castLT, Fin.castSucc_mk,
       Fin.eta, cast_eq, Fin.val_last, lt_self_iff_false, ↓reduceDIte, and_self, Fin.is_lt,
       Fin.castLT_mk, implies_true, and_true]
     grind
