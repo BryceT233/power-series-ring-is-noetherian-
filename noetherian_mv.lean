@@ -52,7 +52,7 @@ private lemma coeff_embSucc_apply (f : MvPowerSeries (Fin n) R) (x : Fin (n + 1)
     coeff x (embSuccFun n f) = if x (Fin.last n) = 0 then coeff (aux_init n x) f else 0 := rfl
 
 /- prove that `X (Fin.last n)` divides `f - embSuccFun n (rmdPredFun n f)` and
-define the quotient to be `quotient_by_X_last' -/
+define the quotient to be `quotient_by_X_last` -/
 private lemma X_last_dvd_sub_comp (f : MvPowerSeries (Fin (n + 1)) R) :
     X (Fin.last n) ∣ f - embSuccFun n (rmdPredFun n f) := by
   refine X_dvd_iff.mpr (fun x hx ↦ ?_)
@@ -217,7 +217,6 @@ private lemma finSuccInvFun_mul (f g : PowerSeries (MvPowerSeries (Fin n) R)) :
     · grind
     have : i.1 ≠ n := by grind
     grind [h2 ⟨i.1, by omega⟩]
-
 
 private lemma left_inv : Function.LeftInverse (finSuccInvFun n) (@finSuccFun R _ n) := by
   intro f; ext x
