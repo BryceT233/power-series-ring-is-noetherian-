@@ -22,9 +22,8 @@ private lemma someComap_zero : someComap S 0 = 0 := by simp [someComap]
 
 private def someMap (x : S →₀ ℕ) : Option S →₀ ℕ := mapDomain some x
 
-private lemma comap_comp_map (x : S →₀ ℕ) : someComap S (someMap S x) = x := by
-  simp only [someComap, someMap]
-  exact comapDomain_mapDomain _ (some_injective _) _
+private lemma comap_comp_map (x : S →₀ ℕ) : someComap S (someMap S x) = x :=
+  comapDomain_mapDomain _ (some_injective _) _
 
 private lemma map_comp_comap (x : Option S →₀ ℕ) :
     someMap S (someComap S x) = x.erase none := by
@@ -102,8 +101,8 @@ private lemma aux_euclidean_alg (f : MvPowerSeries (Option S) R) (x : Option S �
     · apply euclidean_alg_succ
     all_goals simp [ht]
 
-private def optionFunLeft (f : PowerSeries (MvPowerSeries S R)) :
-    MvPowerSeries (Option S) R := fun x ↦ coeff (someComap S x) (PowerSeries.coeff (x none) f)
+private def optionFunLeft (f : PowerSeries (MvPowerSeries S R)) : MvPowerSeries (Option S) R :=
+  fun x ↦ coeff (someComap S x) (PowerSeries.coeff (x none) f)
 
 private lemma coeff_optionFunLeft (f : PowerSeries (MvPowerSeries S R))
     (x : Option S →₀ ℕ) : coeff x (optionFunLeft R S f) =
@@ -172,13 +171,13 @@ private lemma optionFunLeft_commute (r : R) :
   simp only [MvPowerSeries.algebraMap_apply, Algebra.algebraMap_self, RingHom.id_apply,
     MvPowerSeries.ext_iff, coeff_optionFunLeft, PowerSeries.coeff_C, coeff_C]
   intro x
-  split_ifs with h h'
+  split_ifs with _ h
   any_goals grind
-  · simp [h', someComap_zero]
+  · simp [h, someComap_zero]
   · rw [coeff_C, ite_cond_eq_false]
     · simp only [Finsupp.ext_iff, Finsupp.coe_zero, Pi.ofNat_apply, not_forall, someComap,
-        comapDomain_apply, eq_iff_iff, iff_false] at h' ⊢
-      rcases h' with ⟨a, ha⟩
+        comapDomain_apply, eq_iff_iff, iff_false] at h ⊢
+      rcases h with ⟨a, ha⟩
       cases a; contradiction
       grind
 
@@ -213,12 +212,11 @@ private lemma optionFunLeft_mul (f g : PowerSeries (MvPowerSeries S R)) :
     simp only [Function.Injective, someComap, Prod.mk.injEq, Finsupp.ext_iff, comapDomain_apply,
       and_imp, Prod.forall, e]
     refine fun _ _ _ _ _ _ _ _ ↦ ⟨fun i ↦ ?_, fun i ↦ ?_⟩
-    all_goals
-    cases i; grind
-    grind
+    all_goals cases i
+    all_goals grind
 
 -- use what we have proved so far to define an algebra isomorphism from
--- `PowerSeries (MvPowerSeries (Fin n) R)` to `MvPowerSeries (Fin (n + 1)) R`
+-- `PowerSeries (MvPowerSeries S R)` to `MvPowerSeries (Option S) R`
 def optionEquivLeft : PowerSeries (MvPowerSeries S R) ≃ₐ[R] MvPowerSeries (Option S) R := {
   toFun := optionFunLeft R S
   invFun := optionInvFunLeft R S
