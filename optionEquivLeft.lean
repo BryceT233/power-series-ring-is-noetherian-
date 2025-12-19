@@ -11,8 +11,7 @@ suppress_compilation
 
 open MvPowerSeries Finset Finsupp Option
 
-variable (R : Type*) [CommRing R]
-variable (S : Type*)
+variable (R S : Type*) [CommRing R]
 
 -- define the canonical comap and map
 private def someComap (x : Option S →₀ ℕ) : S →₀ ℕ :=
@@ -34,7 +33,7 @@ private lemma map_comp_comap (x : Option S →₀ ℕ) :
     simp
   simp [mapDomain_apply (some_injective _)]
 
--- the canonial comap and map induces functions between `MvPowerSeries (Option S) R` and
+-- the canonial comap and map induce functions between `MvPowerSeries (Option S) R` and
 -- `MvPowerSeries S R`
 private def rmdFun (f : MvPowerSeries (Option S) R) : MvPowerSeries S R :=
   fun x ↦ coeff (someMap S x) f
