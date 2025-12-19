@@ -11,7 +11,36 @@ suppress_compilation
 
 open MvPowerSeries Finset Finsupp Option
 
-variable (R S : Type*) [CommRing R]
+variable (R S : Type*) [CommSemiring R]
+
+section
+
+variable {R S}
+
+theorem MvPowerSeries.coeff_X_mul (f : MvPowerSeries S R) (s : S) (x : S →₀ ℕ) :
+    coeff x (X s * f) = if x s = 0 then 0 else coeff (x - single s 1) f := by
+  classical
+  simp only [coeff_mul, coeff_X, ite_mul, one_mul, zero_mul, sum_ite, sum_const_zero, add_zero]
+  split_ifs with h
+  · have : filter (fun x ↦ x.1 = single s 1) (antidiagonal x) = ∅ := by
+      simp only [Finsupp.ext_iff, Finset.ext_iff, mem_filter, mem_antidiagonal, Finsupp.coe_add,
+        Pi.add_apply, notMem_empty, iff_false, not_and, not_forall, Prod.forall]
+      grind
+    simp [this]
+  have : filter (fun x ↦ x.1 = single s 1) (antidiagonal x) =
+    {(single s 1, x - single s 1)} := by
+    simp only [Finsupp.ext_iff, Finset.ext_iff, mem_filter, mem_antidiagonal, Finsupp.coe_add,
+      Pi.add_apply, mem_singleton, Prod.forall, Prod.mk.injEq, coe_tsub, Pi.sub_apply]
+    grind
+  simp [this]
+
+def MvPowerSeries.quotient_by_X (s : S) (f : MvPowerSeries S R)  :
+    MvPowerSeries S R := fun x => coeff (x + single s 1) f
+
+theorem MvPowerSeries.coeff_quotient_by_X (s : S) (f : MvPowerSeries S R) (x : S →₀ ℕ) :
+    coeff x (quotient_by_X s f) = coeff (x + single s 1) f := rfl
+
+end
 
 -- define the canonical comap and map
 private def someComap (x : Option S →₀ ℕ) : S →₀ ℕ :=
@@ -46,28 +75,33 @@ private def embFun (f : MvPowerSeries S R) : MvPowerSeries (Option S) R :=
 private lemma coeff_embFun_apply (f x) : coeff x (embFun R S f) =
     if x none = 0 then coeff (someComap S x) f else 0 := rfl
 
--- prove that `X none` divides `f - embFun R S (rmdFun R S f)` and
--- define the quotient to be `quotient_by_X_none`
-private lemma X_none_dvd_sub_comp (f : MvPowerSeries (Option S) R) :
-    X none ∣ f - embFun R S (rmdFun R S f) := by
-  refine X_dvd_iff.mpr (fun x hx ↦ ?_)
-  simp [coeff_embFun_apply, hx, coeff_rmdFun_apply, map_comp_comap]
-
-private def quotient_by_X_none (f : MvPowerSeries (Option S) R) :=
-  Exists.choose (X_none_dvd_sub_comp R S f)
-
+-- prove a helper identity
 private lemma rmd_add_X_mul_quotient (f : MvPowerSeries (Option S) R) :
-    embFun R S (rmdFun R S f) + X none * quotient_by_X_none R S f = f := by
-  grind [quotient_by_X_none, Exists.choose_spec (X_none_dvd_sub_comp R S f)]
+    embFun R S (rmdFun R S f) + X none * quotient_by_X none f = f := by
+  classical
+  ext x
+  simp only [map_add, coeff_embFun_apply, coeff_X_mul]
+  split_ifs with h
+  · rw [coeff_rmdFun_apply, map_comp_comap, add_zero]
+    congr; ext a
+    cases a
+    · simp [h]
+    simp
+  rw [zero_add, coeff_quotient_by_X]
+  congr; ext a
+  cases a
+  · simp only [Finsupp.coe_add, coe_tsub, Pi.add_apply, Pi.sub_apply, single_eq_same]
+    omega
+  simp
 
 -- define the euclidean algorithm of a power series `f` divided by `X none`
 private def euclidean_alg (f : MvPowerSeries (Option S) R) :
     ℕ → MvPowerSeries S R × MvPowerSeries (Option S) R
-  | 0 => (rmdFun R S f, quotient_by_X_none R S f)
-  | k + 1 => (rmdFun R S (euclidean_alg f k).2, quotient_by_X_none R S ((euclidean_alg f k).2))
+  | 0 => (rmdFun R S f, quotient_by_X none f)
+  | k + 1 => (rmdFun R S (euclidean_alg f k).2, quotient_by_X none ((euclidean_alg f k).2))
 
 private lemma euclidean_alg_succ (f : MvPowerSeries (Option S) R) (k) :
-    euclidean_alg R S f (k + 1) = euclidean_alg R S (quotient_by_X_none R S f) k := by
+    euclidean_alg R S f (k + 1) = euclidean_alg R S (quotient_by_X none f) k := by
   induction k with
   | zero => simp [euclidean_alg]
   | succ k ih => rw [euclidean_alg.eq_2, ih, euclidean_alg.eq_2]
@@ -130,35 +164,12 @@ private lemma euclidean_alg_optionFunLeft {k} (f : PowerSeries (MvPowerSeries S 
   | succ k ih =>
     intro f
     rw [euclidean_alg_succ]
-    have := PowerSeries.sub_const_eq_X_mul_shift f
-    rw [sub_eq_iff_eq_add] at this
-    nth_rw 2 [this]
+    nth_rw 2 [PowerSeries.eq_X_mul_shift_add_const f]
     rw [map_add, PowerSeries.coeff_succ_X_mul, PowerSeries.coeff_C, ite_cond_eq_false,
       add_zero, ← ih]
-    congr
-    replace this : X none ∈ nonZeroDivisors (MvPowerSeries (Option S) R) :=
-      X_mem_nonzeroDivisors
-    rw [← sub_eq_zero, ← mul_left_mem_nonZeroDivisors_eq_zero_iff this, mul_sub, sub_eq_zero]
-    replace this := rmd_add_X_mul_quotient R S (optionFunLeft R S f)
-    rw [← eq_sub_iff_add_eq'] at this
-    rw [this]; ext x
-    simp only [map_sub, coeff_optionFunLeft, coeff_embFun_apply, coeff_rmdFun_apply,
-      map_comp_comap, erase_same, PowerSeries.coeff_zero_eq_constantCoeff, coeff_mul,
-      coeff_X, PowerSeries.coeff_mk, ite_mul, one_mul, zero_mul, sum_ite, sum_const_zero, add_zero]
-    split_ifs with h
-    · have : filter (fun x ↦ x.1 = single none 1) (antidiagonal x) = ∅ := by
-        simp only [Finsupp.ext_iff, Finset.ext_iff, mem_filter, mem_antidiagonal, Finsupp.coe_add,
-          Pi.add_apply, notMem_empty, iff_false, not_and, not_forall, Prod.forall]
-        grind
-      simp [this, h]
-    have : filter (fun x ↦ x.1 = single none 1) (antidiagonal x) =
-      {(single none 1, x - single none 1)} := by
-      simp only [Finsupp.ext_iff, Finset.ext_iff, mem_filter, mem_antidiagonal, Finsupp.coe_add,
-        Pi.add_apply, mem_singleton, Prod.forall, Prod.mk.injEq, coe_tsub, Pi.sub_apply]
-      grind
-    simp only [sub_zero, this, sum_singleton, coe_tsub, Pi.sub_apply,
-      single_eq_same]
-    rw [Nat.sub_add_cancel (by omega)]
+    congr; ext x
+    simp only [coeff_quotient_by_X, coeff_optionFunLeft, Finsupp.coe_add, Pi.add_apply,
+      single_eq_same, PowerSeries.coeff_mk]
     congr 2
     simp [someComap, Finsupp.ext_iff]
     · simp
