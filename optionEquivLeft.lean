@@ -36,7 +36,7 @@ private lemma map_comp_comap (x : Option S →₀ ℕ) :
   simp [mapDomain_apply (some_injective _)]
 
 -- the canonial comap and map induces functions between `MvPowerSeries (Option S) R` and
--- MvPowerSeries S R
+-- `MvPowerSeries S R`
 private def rmdFun (f : MvPowerSeries (Option S) R) : MvPowerSeries S R :=
   fun x ↦ coeff (someMap S x) f
 
@@ -212,7 +212,7 @@ private lemma optionFunLeft_mul (f g : PowerSeries (MvPowerSeries S R)) :
   · apply Function.Injective.injOn
     simp only [Function.Injective, someComap, Prod.mk.injEq, Finsupp.ext_iff, comapDomain_apply,
       and_imp, Prod.forall, e]
-    refine fun _ _ _ _ _ _ h1 h2 ↦ ⟨fun i ↦ ?_, fun i ↦ ?_⟩
+    refine fun _ _ _ _ _ _ _ _ ↦ ⟨fun i ↦ ?_, fun i ↦ ?_⟩
     all_goals
     cases i; grind
     grind
