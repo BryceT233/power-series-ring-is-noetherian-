@@ -28,7 +28,7 @@ private lemma comap_comp_map (x : S →₀ ℕ) : someComap S (someMap S x) = x 
 private lemma map_comp_comap (x : Option S →₀ ℕ) :
     someMap S (someComap S x) = x.erase none := by
   classical
-  simp only [someMap, someComap]
+  dsimp only [someMap, someComap]
   ext n; cases n
   · rw [erase_same, ← notMem_support_iff, mapDomain_support_of_injective (some_injective _)]
     simp
@@ -39,12 +39,12 @@ private lemma map_comp_comap (x : Option S →₀ ℕ) :
 private def rmdFun (f : MvPowerSeries (Option S) R) : MvPowerSeries S R :=
   fun x ↦ coeff (someMap S x) f
 
-private lemma coeff_rmdFun (f x) : coeff x (rmdFun R S f) = coeff (someMap S x) f := rfl
+private lemma coeff_rmdFun_apply (f x) : coeff x (rmdFun R S f) = coeff (someMap S x) f := rfl
 
 private def embFun (f : MvPowerSeries S R) : MvPowerSeries (Option S) R :=
   fun x ↦ if x none = 0 then coeff (someComap S x) f else 0
 
-private lemma coeff_embFun (f x) : coeff x (embFun R S f) =
+private lemma coeff_embFun_apply (f x) : coeff x (embFun R S f) =
     if x none = 0 then coeff (someComap S x) f else 0 := rfl
 
 -- prove that `X none` divides `f - embFun R S (rmdFun R S f)` and
@@ -52,7 +52,7 @@ private lemma coeff_embFun (f x) : coeff x (embFun R S f) =
 private lemma X_none_dvd_sub_comp (f : MvPowerSeries (Option S) R) :
     X none ∣ f - embFun R S (rmdFun R S f) := by
   refine X_dvd_iff.mpr (fun x hx ↦ ?_)
-  simp [coeff_embFun, hx, coeff_rmdFun, map_comp_comap]
+  simp [coeff_embFun_apply, hx, coeff_rmdFun_apply, map_comp_comap]
 
 private def quotient_by_X_none (f : MvPowerSeries (Option S) R) :=
   Exists.choose (X_none_dvd_sub_comp R S f)
@@ -81,7 +81,7 @@ private lemma aux_euclidean_alg (f : MvPowerSeries (Option S) R) (x : Option S �
   revert f x; induction t with
   | zero =>
     intro _ x ht
-    simp only [euclidean_alg, coeff_rmdFun, map_comp_comap]
+    simp only [euclidean_alg, coeff_rmdFun_apply, map_comp_comap]
     congr
     simp [Finsupp.ext_iff, Finsupp.erase, ht]
   | succ t ih =>
@@ -94,7 +94,7 @@ private lemma aux_euclidean_alg (f : MvPowerSeries (Option S) R) (x : Option S �
       simp only [Finsupp.ext_iff, Finset.ext_iff, mem_filter, mem_antidiagonal, Finsupp.coe_add,
         Pi.add_apply, mem_singleton, Prod.forall, Prod.mk.injEq, coe_tsub, Pi.sub_apply]
       grind
-    simp only [this, sum_singleton, coeff_embFun]
+    simp only [this, sum_singleton, coeff_embFun_apply]
     rw [ite_cond_eq_false, zero_add, ← ih]
     congr 2
     · simp [someComap, Finsupp.ext_iff]
@@ -122,8 +122,8 @@ private lemma euclidean_alg_optionFunLeft {k} (f : PowerSeries (MvPowerSeries S 
   revert f; induction k with
   | zero =>
     intro; ext
-    simp only [euclidean_alg, coeff_rmdFun, coeff_optionFunLeft, comap_comp_map]
-    congr; simp only [someMap]
+    simp only [euclidean_alg, coeff_rmdFun_apply, coeff_optionFunLeft, comap_comp_map]
+    congr; dsimp only [someMap]
     rw [← notMem_support_iff, mapDomain_support_of_injective (some_injective _)]
     simp
   | succ k ih =>
@@ -141,7 +141,7 @@ private lemma euclidean_alg_optionFunLeft {k} (f : PowerSeries (MvPowerSeries S 
     replace this := rmd_add_X_mul_quotient R S (optionFunLeft R S f)
     rw [← eq_sub_iff_add_eq'] at this
     rw [this]; ext x
-    simp only [map_sub, coeff_optionFunLeft, coeff_embFun, coeff_rmdFun,
+    simp only [map_sub, coeff_optionFunLeft, coeff_embFun_apply, coeff_rmdFun_apply,
       map_comp_comap, erase_same, PowerSeries.coeff_zero_eq_constantCoeff, coeff_mul,
       coeff_X, PowerSeries.coeff_mk, ite_mul, one_mul, zero_mul, sum_ite, sum_const_zero, add_zero]
     split_ifs with h
