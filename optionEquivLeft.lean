@@ -52,7 +52,7 @@ private lemma coeff_embFun (f x) : coeff x (embFun R S f) =
 private lemma X_none_dvd_sub_comp (f : MvPowerSeries (Option S) R) :
     X none ∣ f - embFun R S (rmdFun R S f) := by
   refine X_dvd_iff.mpr (fun x hx ↦ ?_)
-  simp [map_sub, coeff_embFun, hx, ↓reduceIte, coeff_rmdFun, map_comp_comap]
+  simp [coeff_embFun, hx, coeff_rmdFun, map_comp_comap]
 
 private def quotient_by_X_none (f : MvPowerSeries (Option S) R) :=
   Exists.choose (X_none_dvd_sub_comp R S f)
