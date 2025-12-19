@@ -79,7 +79,7 @@ private lemma aux_euclidean_alg (f : MvPowerSeries (Option S) R) (x : Option S �
   generalize ht : x none = t
   revert f x; induction t with
   | zero =>
-    intro _ x ht
+    intro _ _ ht
     simp only [euclidean_alg, coeff_rmdFun_apply, map_comp_comap]
     congr
     simp [Finsupp.ext_iff, Finsupp.erase, ht]
@@ -193,15 +193,12 @@ private lemma optionFunLeft_mul (f g : PowerSeries (MvPowerSeries S R)) :
     simp only [someComap, Finset.ext_iff, mem_image, mem_antidiagonal, Finsupp.ext_iff,
       Finsupp.coe_add, Pi.add_apply, Prod.exists, mem_product, comapDomain_apply, Prod.forall,
       Prod.mk.injEq, e]
-    intro u v a b
-    constructor
-    · grind
-    rintro ⟨h1, h2⟩
+    refine fun u v a b ↦ ⟨by grind, fun ⟨h, _⟩ ↦ ?_⟩
     use mapDomain some a + single none u, mapDomain some b + single none v
     simp only [Finsupp.coe_add, Pi.add_apply, single_eq_same, Nat.add_eq_right, ne_eq, reduceCtorEq,
       not_false_eq_true, single_eq_of_ne, add_zero]
     refine ⟨fun y ↦ ?_, ?_, fun y ↦ ?_, fun y ↦ ?_⟩
-    · cases y; simp [mapDomain, h1]
+    · cases y; simp [mapDomain, h]
       rw [mapDomain_apply (some_injective _), mapDomain_apply (some_injective _)]
       grind
     · simp [mapDomain]
