@@ -100,6 +100,7 @@ private lemma aux_euclidean_alg (f : MvPowerSeries (Option S) R) (x : Option S �
     · apply euclidean_alg_succ
     all_goals simp [ht]
 
+-- define the toFun of `optionEquivLeft`
 private def optionFunLeft (f : PowerSeries (MvPowerSeries S R)) : MvPowerSeries (Option S) R :=
   fun x ↦ coeff (someComap S x) (PowerSeries.coeff (x none) f)
 
@@ -107,6 +108,7 @@ private lemma coeff_optionFunLeft (f : PowerSeries (MvPowerSeries S R))
     (x : Option S →₀ ℕ) : coeff x (optionFunLeft R S f) =
       coeff (someComap S x) (PowerSeries.coeff (x none) f) := rfl
 
+-- define the invFun of `optionEquivLeft`
 private def optionInvFunLeft (f : MvPowerSeries (Option S) R) :
     PowerSeries (MvPowerSeries S R) := PowerSeries.mk fun k => (euclidean_alg R S f k).1
 
