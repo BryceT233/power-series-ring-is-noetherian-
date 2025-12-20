@@ -120,19 +120,13 @@ private lemma aux_euclidean_alg (f : MvPowerSeries (Option S) R) (x : Option S �
   | succ t ih =>
     intro f x ht
     nth_rw 2 [← rmd_add_X_mul_shift R S f]
-    simp only [map_add, coeff_mul, coeff_X, ite_mul, one_mul, zero_mul, sum_ite, sum_const_zero,
-      add_zero]
-    have : filter (fun x ↦ x.1 = single none 1) (antidiagonal x) =
-      {(single none 1, x - single none 1)} := by
-      simp only [Finsupp.ext_iff, Finset.ext_iff, mem_filter, mem_antidiagonal, Finsupp.coe_add,
-        Pi.add_apply, mem_singleton, Prod.forall, Prod.mk.injEq, coe_tsub, Pi.sub_apply]
-      grind
-    simp only [this, sum_singleton, coeff_embFun_apply]
-    rw [ite_cond_eq_false, zero_add, ← ih]
+    simp only [map_add, coeff_embFun_apply, ht, Nat.add_eq_zero_iff, one_ne_zero, and_false,
+      ↓reduceIte, coeff_X_mul, zero_add]
+    rw [← ih]
     congr 2
     · simp [someComap, Finsupp.ext_iff]
     · apply euclidean_alg_succ
-    all_goals simp [ht]
+    simp [ht]
 
 -- define the toFun of `optionEquivLeft`
 private def optionFunLeft (f : PowerSeries (MvPowerSeries S R)) : MvPowerSeries (Option S) R :=
