@@ -76,7 +76,7 @@ private lemma coeff_embFun_apply (f x) : coeff x (embFun R S f) =
     if x none = 0 then coeff (someComap S x) f else 0 := rfl
 
 -- prove a helper identity
-private lemma rmd_add_X_mul_quotient (f : MvPowerSeries (Option S) R) :
+private lemma rmd_add_X_mul_shift (f : MvPowerSeries (Option S) R) :
     embFun R S (rmdFun R S f) + X none * shift_by_X none f = f := by
   classical
   ext x
@@ -119,7 +119,7 @@ private lemma aux_euclidean_alg (f : MvPowerSeries (Option S) R) (x : Option S �
     simp [Finsupp.ext_iff, Finsupp.erase, ht]
   | succ t ih =>
     intro f x ht
-    nth_rw 2 [← rmd_add_X_mul_quotient R S f]
+    nth_rw 2 [← rmd_add_X_mul_shift R S f]
     simp only [map_add, coeff_mul, coeff_X, ite_mul, one_mul, zero_mul, sum_ite, sum_const_zero,
       add_zero]
     have : filter (fun x ↦ x.1 = single none 1) (antidiagonal x) =
