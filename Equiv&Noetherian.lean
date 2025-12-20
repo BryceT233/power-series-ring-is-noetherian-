@@ -9,17 +9,16 @@ import Mathlib.RingTheory.PowerSeries.Inverse
 
 noncomputable section
 
-open MvPowerSeries Finset Finsupp Option
+open MvPowerSeries Finset Finsupp Option Classical
 
 variable (R S : Type*) [CommSemiring R]
 
-section lemmas
+section somelemmas
 
 variable {R S}
 
 theorem MvPowerSeries.coeff_X_mul (f : MvPowerSeries S R) (s : S) (x : S →₀ ℕ) :
     coeff x (X s * f) = if x s = 0 then 0 else coeff (x - single s 1) f := by
-  classical
   simp only [coeff_mul, coeff_X, ite_mul, one_mul, zero_mul, sum_ite, sum_const_zero, add_zero]
   split_ifs with h
   · have : filter (fun x ↦ x.1 = single s 1) (antidiagonal x) = ∅ := by
@@ -40,7 +39,7 @@ def MvPowerSeries.shift_by_X (s : S) (f : MvPowerSeries S R) :
 theorem MvPowerSeries.coeff_shift_by_X (s : S) (f : MvPowerSeries S R) (x : S →₀ ℕ) :
     coeff x (shift_by_X s f) = coeff (x + single s 1) f := rfl
 
-variable {σ τ: Type*}
+variable {σ τ : Type*}
 
 /-- The algebra isomorphism between multivariable power series in no variables
 and the ground ring. -/
@@ -70,15 +69,15 @@ def MvPowerSeries.pUnitAlgEquiv : MvPowerSeries PUnit.{u + 1} R ≃ₐ[R] PowerS
     simp [Finsupp.ext_iff]
   right_inv := by
     intro; ext
-    simp only [PowerSeries.coeff_mk]
+    rw [PowerSeries.coeff_mk]
     simp [coeff, PowerSeries.coeff, LinearMap.proj]
   map_mul' := by
-    simp [PowerSeries.ext_iff, PowerSeries.coeff_mk, PowerSeries.coeff_mul, coeff_mul]
+    simp [PowerSeries.ext_iff, PowerSeries.coeff_mul, coeff_mul]
   map_add' := by simp [PowerSeries.ext_iff]
   commutes' := by
     intro; ext
-    simp only [PowerSeries.coeff_mk, PowerSeries.algebraMap_eq]
-    simp only [algebraMap_apply, Algebra.algebraMap_self, RingHom.id_apply]
+    simp only [PowerSeries.coeff_mk, PowerSeries.algebraMap_eq, algebraMap_apply,
+      Algebra.algebraMap_self, RingHom.id_apply]
     rw [coeff_C, PowerSeries.coeff_C]
     simp [Finsupp.ext_iff]
 }
@@ -86,7 +85,7 @@ def MvPowerSeries.pUnitAlgEquiv : MvPowerSeries PUnit.{u + 1} R ≃ₐ[R] PowerS
 an algebra isomorphism -/
 def renameEquiv (e : σ ≃ τ) : MvPowerSeries σ R ≃ₐ[R] MvPowerSeries τ R := sorry
 
-end lemmas
+end somelemmas
 
 /-- The algebra isomorphism between multivariable power series in `Option S₁` and
 power series with coefficients in `MvPolynomial S₁ R`.
@@ -104,7 +103,6 @@ private lemma comap_comp_map (x : S →₀ ℕ) : someComap S (someMap S x) = x 
 
 private lemma map_comp_comap (x : Option S →₀ ℕ) :
     someMap S (someComap S x) = x.erase none := by
-  classical
   dsimp only [someMap, someComap]
   ext n; cases n
   · rw [erase_same, ← notMem_support_iff, mapDomain_support_of_injective (some_injective _)]
@@ -127,7 +125,6 @@ private lemma coeff_embFun_apply (f x) : coeff x (embFun R S f) =
 -- prove a helper identity
 private lemma rmd_add_X_mul_shift (f : MvPowerSeries (Option S) R) :
     embFun R S (rmdFun R S f) + X none * shift_by_X none f = f := by
-  classical
   ext x
   simp only [map_add, coeff_embFun_apply, coeff_X_mul]
   split_ifs with h
@@ -158,7 +155,6 @@ private lemma euclidean_alg_succ (f : MvPowerSeries (Option S) R) (k) :
 -- a helper lemma for proving the right inverse
 private lemma aux_euclidean_alg (f : MvPowerSeries (Option S) R) (x : Option S →₀ ℕ) :
     (coeff (someComap S x)) (euclidean_alg R S f (x none)).1 = (coeff x) f := by
-  classical
   generalize ht : x none = t
   revert f x; induction t with
   | zero =>
@@ -196,7 +192,6 @@ private lemma coeff_optionInvFunLeft (f : MvPowerSeries (Option S) R) (k : ℕ) 
 -- a helper lemma for proving the left inverse
 private lemma euclidean_alg_optionFunLeft {k} (f : PowerSeries (MvPowerSeries S R)) :
     (euclidean_alg R S (optionFunLeft R S f) k).1 = (PowerSeries.coeff k) f := by
-  classical
   revert f; induction k with
   | zero =>
     intro; ext
@@ -221,7 +216,6 @@ private lemma euclidean_alg_optionFunLeft {k} (f : PowerSeries (MvPowerSeries S 
 private lemma optionFunLeft_commute (r : R) :
     optionFunLeft R S ((algebraMap R (PowerSeries (MvPowerSeries S R))) r) =
       (algebraMap R (MvPowerSeries (Option S) R)) r := by
-  classical
   rw [PowerSeries.algebraMap_apply]
   simp only [MvPowerSeries.algebraMap_apply, Algebra.algebraMap_self, RingHom.id_apply,
     MvPowerSeries.ext_iff, coeff_optionFunLeft, PowerSeries.coeff_C, coeff_C]
@@ -239,7 +233,6 @@ private lemma optionFunLeft_commute (r : R) :
 -- `optionFunLeft` is multiplicative
 private lemma optionFunLeft_mul (f g : PowerSeries (MvPowerSeries S R)) :
     optionFunLeft R S (f * g) = optionFunLeft R S f * optionFunLeft R S g := by
-  classical
   ext x
   simp only [coeff_optionFunLeft, PowerSeries.coeff_mul, map_sum, coeff_mul, ← sum_product']
   let e : ((Option S →₀ ℕ) × (Option S →₀ ℕ)) → (ℕ × ℕ) × (S →₀ ℕ) × (S →₀ ℕ) :=
@@ -287,7 +280,6 @@ def optionEquivLeft : PowerSeries (MvPowerSeries S R) ≃ₐ[R] MvPowerSeries (O
 theorem optionEquivLeft_apply {f} : optionEquivLeft R S f = optionFunLeft R S f := rfl
 
 theorem optionEquivLeft_X_none : optionEquivLeft R S PowerSeries.X = X none := by
-  classical
   simp only [optionEquivLeft_apply, MvPowerSeries.ext_iff, coeff_optionFunLeft, PowerSeries.coeff_X,
     coeff_X, Finsupp.ext_iff]
   intro x
@@ -304,7 +296,6 @@ theorem optionEquivLeft_X_none : optionEquivLeft R S PowerSeries.X = X none := b
   all_goals grind
 
 theorem optionEquivLeft_X_some (s : S) : (optionEquivLeft R S) (PowerSeries.C (X s)) = X (some s) := by
-  classical
   simp only [optionEquivLeft_apply, MvPowerSeries.ext_iff, coeff_optionFunLeft, PowerSeries.coeff_C,
     coeff_X, Finsupp.ext_iff]
   intro x
@@ -320,7 +311,6 @@ theorem optionEquivLeft_X_some (s : S) : (optionEquivLeft R S) (PowerSeries.C (X
   all_goals grind
 
 theorem optionEquivLeft_C (r : R) : (optionEquivLeft R S) (PowerSeries.C (C r)) = C r := by
-  classical
   simp only [optionEquivLeft_apply, MvPowerSeries.ext_iff, coeff_optionFunLeft, PowerSeries.coeff_C,
     coeff_C, Finsupp.ext_iff, Finsupp.coe_zero, Pi.zero_apply]
   intro x
