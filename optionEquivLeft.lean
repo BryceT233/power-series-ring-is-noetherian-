@@ -233,3 +233,56 @@ def optionEquivLeft : PowerSeries (MvPowerSeries S R) ≃ₐ[R] MvPowerSeries (O
   map_add' := by simp [MvPowerSeries.ext_iff, coeff_optionFunLeft]
   commutes' := optionFunLeft_commute R S
 }
+
+@[simp]
+theorem optionEquivLeft_apply {f} : optionEquivLeft R S f = optionFunLeft R S f := rfl
+
+theorem optionEquivLeft_X_none : optionEquivLeft R S PowerSeries.X = X none := by
+  classical
+  simp only [optionEquivLeft_apply, MvPowerSeries.ext_iff, coeff_optionFunLeft, PowerSeries.coeff_X,
+    coeff_X, Finsupp.ext_iff]
+  intro x
+  split_ifs with h h'
+  any_goals grind
+  · simp only [someComap, coeff_one, Finsupp.ext_iff, comapDomain_apply, Finsupp.coe_zero,
+      Pi.ofNat_apply, ite_eq_left_iff, not_forall, forall_exists_index]
+    grind
+  simp only [someComap, coeff_one, Finsupp.ext_iff, comapDomain_apply, Finsupp.coe_zero,
+    Pi.zero_apply, ite_eq_right_iff]
+  rw [not_forall] at h'
+  rcases h' with ⟨a, _⟩
+  cases a
+  all_goals grind
+
+theorem optionEquivLeft_X_some (s : S) : (optionEquivLeft R S) (PowerSeries.C (X s)) = X (some s) := by
+  classical
+  simp only [optionEquivLeft_apply, MvPowerSeries.ext_iff, coeff_optionFunLeft, PowerSeries.coeff_C,
+    coeff_X, Finsupp.ext_iff]
+  intro x
+  split_ifs with h h'
+  any_goals grind
+  · simp only [someComap, coeff_X, Finsupp.ext_iff, comapDomain_apply, ite_eq_left_iff, not_forall,
+      forall_exists_index]
+    grind
+  simp only [someComap, coeff_X, Finsupp.ext_iff, comapDomain_apply, ite_eq_right_iff]
+  rw [not_forall] at h'
+  rcases h' with ⟨a, _⟩
+  cases a
+  all_goals grind
+
+theorem optionEquivLeft_C (r : R) : (optionEquivLeft R S) (PowerSeries.C (C r)) = C r := by
+  classical
+  simp only [optionEquivLeft_apply, MvPowerSeries.ext_iff, coeff_optionFunLeft, PowerSeries.coeff_C,
+    coeff_C, Finsupp.ext_iff, Finsupp.coe_zero, Pi.zero_apply]
+  intro x
+  split_ifs with h h'
+  any_goals grind
+  · simp only [someComap, coeff_C, Finsupp.ext_iff, comapDomain_apply, Finsupp.coe_zero,
+      Pi.zero_apply, ite_eq_left_iff, not_forall, forall_exists_index]
+    grind
+  simp only [someComap, coeff_C, Finsupp.ext_iff, comapDomain_apply, Finsupp.coe_zero,
+    Pi.zero_apply, ite_eq_right_iff]
+  rw [not_forall] at h'
+  rcases h' with ⟨a, _⟩
+  cases a
+  all_goals grind
