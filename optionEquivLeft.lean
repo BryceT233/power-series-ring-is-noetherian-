@@ -34,7 +34,7 @@ theorem MvPowerSeries.coeff_X_mul (f : MvPowerSeries S R) (s : S) (x : S →₀ 
     grind
   simp [this]
 
-def MvPowerSeries.shift_by_X (s : S) (f : MvPowerSeries S R)  :
+def MvPowerSeries.shift_by_X (s : S) (f : MvPowerSeries S R) :
     MvPowerSeries S R := fun x => coeff (x + single s 1) f
 
 theorem MvPowerSeries.coeff_shift_by_X (s : S) (f : MvPowerSeries S R) (x : S →₀ ℕ) :
@@ -113,20 +113,20 @@ private lemma aux_euclidean_alg (f : MvPowerSeries (Option S) R) (x : Option S �
   generalize ht : x none = t
   revert f x; induction t with
   | zero =>
-    intro _ _ ht
+    intro _ _ h
     simp only [euclidean_alg, coeff_rmdFun_apply, map_comp_comap]
     congr
-    simp [Finsupp.ext_iff, Finsupp.erase, ht]
+    simp [Finsupp.ext_iff, Finsupp.erase, h]
   | succ t ih =>
-    intro f x ht
+    intro f x h
     nth_rw 2 [← rmd_add_X_mul_shift R S f]
-    simp only [map_add, coeff_embFun_apply, ht, Nat.add_eq_zero_iff, one_ne_zero, and_false,
+    simp only [map_add, coeff_embFun_apply, h, Nat.add_eq_zero_iff, one_ne_zero, and_false,
       ↓reduceIte, coeff_X_mul, zero_add]
     rw [← ih]
     congr 2
     · simp [someComap, Finsupp.ext_iff]
     · apply euclidean_alg_succ
-    simp [ht]
+    simp [h]
 
 -- define the toFun of `optionEquivLeft`
 private def optionFunLeft (f : PowerSeries (MvPowerSeries S R)) : MvPowerSeries (Option S) R :=
