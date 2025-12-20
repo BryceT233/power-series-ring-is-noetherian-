@@ -34,11 +34,11 @@ theorem MvPowerSeries.coeff_X_mul (f : MvPowerSeries S R) (s : S) (x : S →₀ 
     grind
   simp [this]
 
-def MvPowerSeries.quotient_by_X (s : S) (f : MvPowerSeries S R)  :
+def MvPowerSeries.shift_by_X (s : S) (f : MvPowerSeries S R)  :
     MvPowerSeries S R := fun x => coeff (x + single s 1) f
 
-theorem MvPowerSeries.coeff_quotient_by_X (s : S) (f : MvPowerSeries S R) (x : S →₀ ℕ) :
-    coeff x (quotient_by_X s f) = coeff (x + single s 1) f := rfl
+theorem MvPowerSeries.coeff_shift_by_X (s : S) (f : MvPowerSeries S R) (x : S →₀ ℕ) :
+    coeff x (shift_by_X s f) = coeff (x + single s 1) f := rfl
 
 end
 
@@ -77,7 +77,7 @@ private lemma coeff_embFun_apply (f x) : coeff x (embFun R S f) =
 
 -- prove a helper identity
 private lemma rmd_add_X_mul_quotient (f : MvPowerSeries (Option S) R) :
-    embFun R S (rmdFun R S f) + X none * quotient_by_X none f = f := by
+    embFun R S (rmdFun R S f) + X none * shift_by_X none f = f := by
   classical
   ext x
   simp only [map_add, coeff_embFun_apply, coeff_X_mul]
@@ -87,7 +87,7 @@ private lemma rmd_add_X_mul_quotient (f : MvPowerSeries (Option S) R) :
     cases a
     · simp [h]
     simp
-  rw [zero_add, coeff_quotient_by_X]
+  rw [zero_add, coeff_shift_by_X]
   congr; ext a
   cases a
   · simp only [Finsupp.coe_add, coe_tsub, Pi.add_apply, Pi.sub_apply, single_eq_same]
@@ -97,11 +97,11 @@ private lemma rmd_add_X_mul_quotient (f : MvPowerSeries (Option S) R) :
 -- define the euclidean algorithm of a power series `f` divided by `X none`
 private def euclidean_alg (f : MvPowerSeries (Option S) R) :
     ℕ → MvPowerSeries S R × MvPowerSeries (Option S) R
-  | 0 => (rmdFun R S f, quotient_by_X none f)
-  | k + 1 => (rmdFun R S (euclidean_alg f k).2, quotient_by_X none ((euclidean_alg f k).2))
+  | 0 => (rmdFun R S f, shift_by_X none f)
+  | k + 1 => (rmdFun R S (euclidean_alg f k).2, shift_by_X none ((euclidean_alg f k).2))
 
 private lemma euclidean_alg_succ (f : MvPowerSeries (Option S) R) (k) :
-    euclidean_alg R S f (k + 1) = euclidean_alg R S (quotient_by_X none f) k := by
+    euclidean_alg R S f (k + 1) = euclidean_alg R S (shift_by_X none f) k := by
   induction k with
   | zero => simp [euclidean_alg]
   | succ k ih => rw [euclidean_alg.eq_2, ih, euclidean_alg.eq_2]
@@ -168,7 +168,7 @@ private lemma euclidean_alg_optionFunLeft {k} (f : PowerSeries (MvPowerSeries S 
     rw [map_add, PowerSeries.coeff_succ_X_mul, PowerSeries.coeff_C, ite_cond_eq_false,
       add_zero, ← ih]
     congr; ext x
-    simp only [coeff_quotient_by_X, coeff_optionFunLeft, Finsupp.coe_add, Pi.add_apply,
+    simp only [coeff_shift_by_X, coeff_optionFunLeft, Finsupp.coe_add, Pi.add_apply,
       single_eq_same, PowerSeries.coeff_mk]
     congr 2
     simp [someComap, Finsupp.ext_iff]
