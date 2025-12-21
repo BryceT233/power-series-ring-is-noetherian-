@@ -227,13 +227,66 @@ theorem killComplFun_one : killComplFun f (1 : MvPowerSeries τ R) = 1 := by
   rw [← ne_eq, ← mem_support_iff, mapDomain_support_of_injective hf] at h
   grind
 
---theorem killComplFun_add
+include hf in
+theorem killComplFun_mul (p q : MvPowerSeries τ R) :
+    killComplFun f (p * q) = killComplFun f p * killComplFun f q := by
+  simp only [MvPowerSeries.ext_iff, coeff_killComplFun, coeff_mul]
+  intro x
+  let e : (σ →₀ ℕ) × (σ →₀ ℕ) → (τ →₀ ℕ) × (τ →₀ ℕ) := fun (a, b) ↦
+    (mapDomain f a, mapDomain f b)
+  have img_e : antidiagonal (mapDomain f x) = image e (antidiagonal x) := by
+    simp only [Finset.ext_iff, mem_antidiagonal, mem_image, Prod.exists, Prod.forall,
+      Prod.mk.injEq, e]
+    refine fun a b ↦ ⟨fun h ↦ ?_, fun ⟨a', b', h1, h2, h3⟩ ↦ ?_⟩
+    · use comapDomain f a hf.injOn, comapDomain f b hf.injOn
+      have : mapDomain f (comapDomain f a hf.injOn) = a ∧
+        mapDomain f (comapDomain f b hf.injOn) = b := by
+        constructor; all_goals
+        apply mapDomain_comapDomain f hf
+        simp only [Set.subset_def, SetLike.mem_coe, mem_support_iff, ne_eq, Set.mem_range]
+        intro t _
+        simp only [Finsupp.ext_iff, Finsupp.coe_add, Pi.add_apply] at h
+        specialize h t
+        replace h : (mapDomain f x) t ≠ 0 := by omega
+        rw [← mem_support_iff, mapDomain_support_of_injective hf] at h
+        grind
+      refine ⟨mapDomain_injective hf ?_, this.left, this.right⟩
+      simp [mapDomain_add, ← h, this]
+    rw [← h2, ← h3, ← mapDomain_add, h1]
+  rw [img_e, sum_image]
+  · apply Function.Injective.injOn
+    simp only [Function.Injective, Prod.mk.injEq, and_imp, Prod.forall, e]
+    grind [mapDomain_injective]
 
+include hf in
+theorem killComplFun_commutes (r : R) :
+    killComplFun f ((algebraMap R (MvPowerSeries τ R)) r) =
+      (algebraMap R (MvPowerSeries σ R)) r := by
+  simp only [algebraMap_apply, Algebra.algebraMap_self, RingHom.id_apply, MvPowerSeries.ext_iff,
+    coeff_killComplFun, coeff_C, Finsupp.ext_iff, Finsupp.coe_zero, Pi.zero_apply]
+  intro x; split_ifs with h1 h2
+  any_goals rfl
+  · rw [not_forall] at h2
+    rcases h2 with ⟨s, _⟩
+    specialize h1 (f s)
+    grind [mapDomain_apply hf]
+  rw [not_forall] at h1
+  rcases h1 with ⟨_, h⟩
+  rw [← ne_eq, ← mem_support_iff, mapDomain_support_of_injective hf] at h
+  grind
+
+variable {f}
+/-- Given a function between sets of variables `f : σ → τ` that is injective with proof `hf`,
+  `MvPowerSeries.killCompl hf` is the `AlgHom` from `R[[τ]]` to `R[[σ]]` that is left inverse to
+  `rename f : R[[σ]] → R[[τ]]` and sends the variables in the complement of the range of `f` to `0`. -/
 def killCompl : MvPowerSeries τ R →ₐ[R] MvPowerSeries σ R := {
   toFun := killComplFun f
   map_one' := killComplFun_one f hf
-  map_mul' := sorry
+  map_mul' := killComplFun_mul f hf
   map_zero' := killComplFun_zero f
-  map_add' := sorry
-  commutes' := sorry
+  map_add' := by simp [MvPowerSeries.ext_iff, coeff_killComplFun]
+  commutes' := killComplFun_commutes f hf
 }
+
+theorem killComple_apply (p : MvPowerSeries τ R) :
+    killCompl hf p = killComplFun f p := rfl
