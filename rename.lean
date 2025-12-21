@@ -187,3 +187,10 @@ theorem rename_monomial (d : σ →₀ ℕ) (r : R) :
     rcases h1 with ⟨t, ht, _⟩
     rw [h3 t, ← ne_eq, ← mem_support_iff, mapDomain_support_of_injective hf] at ht
     grind
+
+theorem rename_injective : Function.Injective (rename (R := R) hf) := by
+  intro _ _ h; ext x
+  simp only [rename_apply, MvPowerSeries.ext_iff, coeff_renameFun] at h
+  simpa [mapDomain_support_of_injective hf, comapDomain_mapDomain _ hf] using h (mapDomain f x)
+
+def killComplFun (p : MvPowerSeries τ R) : MvPowerSeries σ R := fun x ↦ coeff (mapDomain f x) p
