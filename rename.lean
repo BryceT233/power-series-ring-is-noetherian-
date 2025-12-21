@@ -145,3 +145,17 @@ theorem map_rename (F : R →+* S) (p : MvPowerSeries σ R) :
 @[simp]
 theorem rename_rename {g : τ → α} (hg : g.Injective) (p : MvPowerSeries σ R) :
     rename hg (rename hf p) = rename (hg.comp hf) p := by
+  simp only [rename_apply, MvPowerSeries.ext_iff, coeff_renameFun, Set.subset_def, SetLike.mem_coe,
+    mem_support_iff, ne_eq, Set.mem_range, comapDomain_support, coe_preimage, Set.mem_preimage,
+    Function.comp_apply]
+  intro; split_ifs
+  · congr
+    simp [Finsupp.ext_iff]
+  all_goals grind
+
+lemma rename_comp_rename {g : τ → α} (hg : g.Injective) :
+    (rename (R := R) hg).comp (rename hf) = rename (hg.comp hf) :=
+  AlgHom.ext fun p ↦ rename_rename hf hg p
+
+@[simp]
+theorem rename_id : rename (Function.injective_id) = AlgHom.id R (MvPowerSeries σ R) := sorry
