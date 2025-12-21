@@ -24,7 +24,7 @@ which modifies the set of variables. Most of the results have a comparison in `M
 + `R S : Type*` `[CommSemiring R]` `[CommSemiring S]` (the coefficients)
 
 + `x : σ →₀ ℕ`, a function from `σ` to `ℕ` which is zero away from a finite set.
-This will give rise to a monomial in `MvPowerSeries σ R` which mathematicians might call `X^x`
+This will give rise to a monomial in `MvPowerSeries σ R`
 
 + `r : R` elements of the coefficient ring
 
