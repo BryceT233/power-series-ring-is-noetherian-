@@ -35,7 +35,8 @@ variable {f : σ → τ} (hf : f.Injective)
 namespace MvPowerSeries
 
 def renameFun (p : MvPowerSeries σ R) : MvPowerSeries τ R :=
-  fun x ↦ if SetLike.coe x.support ⊆ Set.range f then coeff (x.comapDomain f hf.injOn) p else 0
+  fun x ↦ if SetLike.coe x.support ⊆ Set.range f then
+    coeff (x.comapDomain f hf.injOn) p else 0
 
 theorem coeff_renameFun (p : MvPowerSeries σ R) (x : τ →₀ ℕ) :
     coeff x (renameFun hf p) = if SetLike.coe x.support ⊆ Set.range f then
@@ -109,6 +110,7 @@ theorem renameFun_commute (r : R) : renameFun hf ((algebraMap R (MvPowerSeries �
     coeff_C, Finsupp.ext_iff, comapDomain_apply, Finsupp.coe_zero, Pi.zero_apply]
   grind
 
+/-- Rename all the variables in a multivariable power series by an injective map. -/
 def rename : MvPowerSeries σ R →ₐ[R] MvPowerSeries τ R := {
   toFun := renameFun hf
   map_one' := renameFun_one hf
@@ -118,7 +120,6 @@ def rename : MvPowerSeries σ R →ₐ[R] MvPowerSeries τ R := {
   commutes' := renameFun_commute hf
 }
 
-@[simp]
 theorem rename_apply {p : MvPowerSeries σ R} : rename hf p = renameFun hf p := rfl
 
 theorem rename_C (r : R) : rename hf (C r : MvPowerSeries σ R) = C r := by
@@ -158,4 +159,31 @@ lemma rename_comp_rename {g : τ → α} (hg : g.Injective) :
   AlgHom.ext fun p ↦ rename_rename hf hg p
 
 @[simp]
-theorem rename_id : rename (Function.injective_id) = AlgHom.id R (MvPowerSeries σ R) := sorry
+theorem rename_id : rename (Function.injective_id) = AlgHom.id R (MvPowerSeries σ R) := by
+  ext p x
+  simp only [rename_apply, coeff_renameFun, Set.range_id, Set.subset_univ, ↓reduceIte,
+    AlgHom.coe_id, id_eq]
+  congr
+  simp [Finsupp.ext_iff]
+
+lemma rename_id_apply (p : MvPowerSeries σ R) :
+    rename (Function.injective_id) p = p := by simp
+
+theorem rename_monomial (d : σ →₀ ℕ) (r : R) :
+    rename hf (monomial d r) = monomial (d.mapDomain f) r := by
+  simp only [rename_apply, MvPowerSeries.ext_iff, coeff_renameFun, Set.subset_def, SetLike.mem_coe,
+    mem_support_iff, ne_eq, Set.mem_range, coeff_monomial, Finsupp.ext_iff, comapDomain_apply]
+  intro x; split_ifs with h1 _ h2 _ h3
+  any_goals rfl
+  · rw [not_forall] at h2
+    rcases h2 with ⟨t, ht⟩
+    rw [← ne_eq] at ht; symm at ht
+    by_cases! h : x t ≠ 0
+    · grind [mapDomain_apply hf]
+    rw [h, ← mem_support_iff, mapDomain_support_of_injective hf] at ht
+    grind
+  · grind [mapDomain_apply hf]
+  · simp only [not_forall, exists_prop, not_exists] at h1
+    rcases h1 with ⟨t, ht, _⟩
+    rw [h3 t, ← ne_eq, ← mem_support_iff, mapDomain_support_of_injective hf] at ht
+    grind
