@@ -193,4 +193,29 @@ theorem rename_injective : Function.Injective (rename (R := R) hf) := by
   simp only [rename_apply, MvPowerSeries.ext_iff, coeff_renameFun] at h
   simpa [mapDomain_support_of_injective hf, comapDomain_mapDomain _ hf] using h (mapDomain f x)
 
+variable (f)
+
 def killComplFun (p : MvPowerSeries τ R) : MvPowerSeries σ R := fun x ↦ coeff (mapDomain f x) p
+
+theorem coeff_killComplFun (p : MvPowerSeries τ R) (x : σ →₀ ℕ) :
+  coeff x (killComplFun f p) = coeff (mapDomain f x) p := rfl
+
+theorem killCompFun_zero : killComplFun f (0 : MvPowerSeries τ R) = 0 := by
+  simp [MvPowerSeries.ext_iff, coeff_killComplFun]
+
+include hf in
+theorem killComplFun_one : killComplFun f (1 : MvPowerSeries τ R) = 1 := by
+  simp only [MvPowerSeries.ext_iff, coeff_killComplFun, coeff_one, Finsupp.ext_iff,
+    Finsupp.coe_zero, Pi.zero_apply]
+  intro x; split_ifs with h1 h2 _
+  any_goals rfl
+  · rw [not_forall] at h2
+    rcases h2 with ⟨s, _⟩
+    specialize h1 (f s)
+    grind [mapDomain_apply hf]
+  rw [not_forall] at h1
+  rcases h1 with ⟨s, hs⟩
+  rw [← ne_eq, ← mem_support_iff, mapDomain_support_of_injective hf] at hs
+  grind
+
+--theorem killComplFun_add
