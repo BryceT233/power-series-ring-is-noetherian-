@@ -278,7 +278,7 @@ theorem killComplFun_commutes (r : R) :
 variable {f}
 /-- Given a function between sets of variables `f : σ → τ` that is injective with proof `hf`,
   `MvPowerSeries.killCompl hf` is the `AlgHom` from `R[[τ]]` to `R[[σ]]` that is left inverse to
-  `rename f : R[[σ]] → R[[τ]]` and sends the variables in the complement of the range of `f` to `0`. -/
+  `rename hf : R[[σ]] → R[[τ]]` and sends the variables in the complement of the range of `f` to `0`. -/
 def killCompl : MvPowerSeries τ R →ₐ[R] MvPowerSeries σ R := {
   toFun := killComplFun f
   map_one' := killComplFun_one f hf
@@ -303,6 +303,42 @@ theorem killCompl_C (r : R) : killCompl hf (C r) = C r := by
   rcases h1 with ⟨t, ht⟩
   rw [← ne_eq, ← mem_support_iff, mapDomain_support_of_injective hf] at ht
   grind
+
+theorem killCompl_X (t : τ) : killCompl (R := R) hf (X t) = if h : t ∈ Set.range f then
+    X ((Equiv.ofInjective f hf).symm ⟨t, h⟩) else 0 := by
+  simp only [killCompl_apply, Set.mem_range, MvPowerSeries.ext_iff, coeff_killComplFun, coeff_X,
+    Finsupp.ext_iff, single_apply]
+  intro x; split_ifs with h1 h2 h3
+  · rcases h2 with ⟨s, hs⟩
+    simp only [← hs, Equiv.ofInjective_symm_apply, coeff_X, Finsupp.ext_iff, single_apply,
+      left_eq_ite_iff, not_forall, forall_exists_index]
+    intro s' hs'
+    split_ifs at hs' with h
+    · grind [h1 (f s), mapDomain_apply hf]
+    specialize h1 (f s')
+    rw [ite_cond_eq_false, mapDomain_apply hf] at h1
+    contradiction
+    · grind
+  · rw [not_exists] at h2
+    replace h1 : (mapDomain f x) t ≠ 0 := by
+      specialize h1 t
+      simp only [↓reduceIte] at h1
+      simp [h1]
+    rw [← mem_support_iff, mapDomain_support_of_injective hf] at h1
+    grind
+  · rw [not_forall] at h1
+    rcases h3 with ⟨s, hs⟩
+    simp only [← hs, Equiv.ofInjective_symm_apply, coeff_X, Finsupp.ext_iff, single_apply,
+      right_eq_ite_iff]
+    rcases h1 with ⟨_, h1⟩
+    intro h; exfalso
+    revert h1
+    simp only [imp_false, Decidable.not_not]
+    split_ifs
+    · grind [mapDomain_apply hf]
+    rw [← notMem_support_iff, mapDomain_support_of_injective hf]
+    grind
+  simp
 
 theorem killCompl_comp_rename : (killCompl hf).comp (rename hf) = AlgHom.id R _ := by
   ext p x
