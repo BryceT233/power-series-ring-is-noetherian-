@@ -6,9 +6,18 @@ Authors: Bingyu Xia
 
 import Mathlib
 
-/-!## Notation
+/-!
+# Renaming variables of power series
 
-As in polynomial files, we typically use the notation:
+This file establishes the `rename` operation on multivariate power series under an injective map,
+which modifies the set of variables. Most of the results have a comparison in `MvPolynomials/rename.lean`
+
+## Main declarations
+
+* `MvPowerSeries.rename`
+* `MvPowerSeries.renameEquiv`
+
+## Notation
 
 + `σ τ α : Type*` (indexing the variables)
 
@@ -21,7 +30,7 @@ This will give rise to a monomial in `MvPowerSeries σ R` which mathematicians m
 
 + `i : σ`, with corresponding monomial `X i`, often denoted `X_i` by mathematicians
 
-+ `p q : MvPolynomial σ R`
++ `p q : MvPowerSeries σ R`
 
 -/
 
@@ -200,7 +209,7 @@ def killComplFun (p : MvPowerSeries τ R) : MvPowerSeries σ R := fun x ↦ coef
 theorem coeff_killComplFun (p : MvPowerSeries τ R) (x : σ →₀ ℕ) :
   coeff x (killComplFun f p) = coeff (mapDomain f x) p := rfl
 
-theorem killCompFun_zero : killComplFun f (0 : MvPowerSeries τ R) = 0 := by
+theorem killComplFun_zero : killComplFun f (0 : MvPowerSeries τ R) = 0 := by
   simp [MvPowerSeries.ext_iff, coeff_killComplFun]
 
 include hf in
@@ -214,8 +223,17 @@ theorem killComplFun_one : killComplFun f (1 : MvPowerSeries τ R) = 1 := by
     specialize h1 (f s)
     grind [mapDomain_apply hf]
   rw [not_forall] at h1
-  rcases h1 with ⟨s, hs⟩
-  rw [← ne_eq, ← mem_support_iff, mapDomain_support_of_injective hf] at hs
+  rcases h1 with ⟨_, h⟩
+  rw [← ne_eq, ← mem_support_iff, mapDomain_support_of_injective hf] at h
   grind
 
 --theorem killComplFun_add
+
+def killCompl : MvPowerSeries τ R →ₐ[R] MvPowerSeries σ R := {
+  toFun := killComplFun f
+  map_one' := killComplFun_one f hf
+  map_mul' := sorry
+  map_zero' := killComplFun_zero f
+  map_add' := sorry
+  commutes' := sorry
+}
