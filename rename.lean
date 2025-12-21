@@ -290,3 +290,32 @@ def killCompl : MvPowerSeries τ R →ₐ[R] MvPowerSeries σ R := {
 
 theorem killCompl_apply (p : MvPowerSeries τ R) :
     killCompl hf p = killComplFun f p := rfl
+
+theorem killCompl_C (r : R) : killCompl hf (C r) = C r := by
+  simp only [killCompl_apply, MvPowerSeries.ext_iff, coeff_killComplFun, coeff_C, Finsupp.ext_iff,
+    Finsupp.coe_zero, Pi.zero_apply]
+  intro x; split_ifs with h1 h2
+  any_goals rfl
+  · rw [not_forall] at h2
+    rcases h2 with ⟨s, _⟩
+    grind [h1 (f s), mapDomain_apply hf]
+  rw [not_forall] at h1
+  rcases h1 with ⟨t, ht⟩
+  rw [← ne_eq, ← mem_support_iff, mapDomain_support_of_injective hf] at ht
+  grind
+
+theorem killCompl_comp_rename : (killCompl hf).comp (rename hf) = AlgHom.id R _ := by
+  ext p x
+  simp only [AlgHom.coe_comp, Function.comp_apply, rename_apply, killCompl_apply,
+    coeff_killComplFun, coeff_renameFun, Set.subset_def, SetLike.mem_coe, mem_support_iff, ne_eq,
+    Set.mem_range, AlgHom.coe_id, id_eq]
+  split_ifs with h
+  · rw [comapDomain_mapDomain f hf]
+  simp only [not_forall, exists_prop, not_exists] at h
+  rcases h with ⟨_, h, _⟩
+  rw [← ne_eq, ← mem_support_iff, mapDomain_support_of_injective hf] at h
+  grind
+
+@[simp]
+theorem killCompl_rename_app (p : MvPowerSeries σ R) : killCompl hf (rename hf p) = p :=
+  AlgHom.congr_fun (killCompl_comp_rename hf) p
