@@ -79,18 +79,18 @@ theorem renameFun_mul (p q : MvPowerSeries σ R) :
       simp only [Set.subset_def, SetLike.mem_coe, mem_support_iff, ne_eq, Set.mem_range,
         Finset.ext_iff, mem_antidiagonal, Finsupp.ext_iff, Finsupp.coe_add, Pi.add_apply,
         comapDomain_apply, mem_image, Prod.exists, Prod.forall, Prod.mk.injEq] at h ⊢
-      refine fun a b ↦ ⟨fun hab ↦ ?_, fun h' ↦ ?_⟩
+      refine fun a b ↦ ⟨fun h' ↦ ?_, fun h' ↦ ?_⟩
       · use mapDomain f a, mapDomain f b
         simp only [mapDomain_apply hf, implies_true, and_self, and_true]
         intro t
-        by_cases! h' : x t = 0
-        · simp only [h', Nat.add_eq_zero_iff]
+        by_cases! h'' : x t = 0
+        · simp only [h'', Nat.add_eq_zero_iff]
           constructor; all_goals
           rw [← notMem_support_iff, mapDomain_support_of_injective hf]
           simp only [mem_image, mem_support_iff, ne_eq, not_exists, not_and]
           grind
-        obtain ⟨s, hs⟩ := h _ h'
-        simp [← hs, mapDomain_apply hf, hab s]
+        obtain ⟨s, hs⟩ := h _ h''
+        simp [← hs, mapDomain_apply hf, h' s]
       grind
     rw [this, sum_image]
     · simp only [Set.subset_def, SetLike.mem_coe, mem_support_iff, ne_eq, Set.mem_range, Set.InjOn,
@@ -288,5 +288,5 @@ def killCompl : MvPowerSeries τ R →ₐ[R] MvPowerSeries σ R := {
   commutes' := killComplFun_commutes f hf
 }
 
-theorem killComple_apply (p : MvPowerSeries τ R) :
+theorem killCompl_apply (p : MvPowerSeries τ R) :
     killCompl hf p = killComplFun f p := rfl
