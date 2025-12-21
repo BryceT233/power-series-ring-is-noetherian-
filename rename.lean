@@ -21,7 +21,7 @@ This will give rise to a monomial in `MvPowerSeries σ R` which mathematicians m
 
 + `i : σ`, with corresponding monomial `X i`, often denoted `X_i` by mathematicians
 
-+ `p : MvPolynomial σ R`
++ `p q : MvPolynomial σ R`
 
 -/
 
@@ -103,7 +103,7 @@ theorem renameFun_add (p g : MvPowerSeries σ R) : renameFun hf (p + g) =
   · rfl
   simp
 
-theorem renameFun_commute (r : R) : renameFun hf ((algebraMap R (MvPowerSeries σ R)) r) =
+theorem renameFun_commutes (r : R) : renameFun hf ((algebraMap R (MvPowerSeries σ R)) r) =
     (algebraMap R (MvPowerSeries τ R)) r := by
   simp only [algebraMap_apply, Algebra.algebraMap_self, RingHom.id_apply, MvPowerSeries.ext_iff,
     coeff_renameFun, Set.subset_def, SetLike.mem_coe, mem_support_iff, ne_eq, Set.mem_range,
@@ -117,7 +117,7 @@ def rename : MvPowerSeries σ R →ₐ[R] MvPowerSeries τ R := {
   map_mul' := renameFun_mul hf
   map_zero' := renameFun_zero hf
   map_add' := renameFun_add hf
-  commutes' := renameFun_commute hf
+  commutes' := renameFun_commutes hf
 }
 
 theorem rename_apply {p : MvPowerSeries σ R} : rename hf p = renameFun hf p := rfl
