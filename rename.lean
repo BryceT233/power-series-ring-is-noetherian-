@@ -328,17 +328,16 @@ theorem killCompl_X (t : τ) : killCompl (R := R) hf (X t) = if h : t ∈ Set.ra
     rw [ite_cond_eq_false, mapDomain_apply hf] at h1
     contradiction
     · grind only
-  · rw [not_exists] at h2
-    replace h1 : (mapDomain f x) t ≠ 0 := by
+  · replace h1 : (mapDomain f x) t ≠ 0 := by
       specialize h1 t
       simp only [↓reduceIte] at h1
       simp [h1]
     rw [← mem_support_iff, mapDomain_support_of_injective hf] at h1
     grind only [= mem_image]
-  · rw [not_forall] at h1
-    rcases h3 with ⟨s, hs⟩
+  · rcases h3 with ⟨s, hs⟩
     simp only [← hs, Equiv.ofInjective_symm_apply, coeff_X, Finsupp.ext_iff, single_apply,
       right_eq_ite_iff]
+    rw [not_forall] at h1
     rcases h1 with ⟨_, h1⟩
     intro h; exfalso
     revert h1
