@@ -10,7 +10,9 @@ import Mathlib
 # Renaming variables of power series
 
 This file establishes the `rename` operation on multivariate power series under an injective map,
-which modifies the set of variables. Most of the results have a comparison in `MvPolynomials/rename.lean`
+which modifies the set of variables.
+
+This file is patterned after `MvPolynomials/rename.lean`
 
 ## Main declarations
 
@@ -59,7 +61,7 @@ theorem renameFun_one : renameFun hf (1 : MvPowerSeries σ R) = 1 := by
     mem_support_iff, ne_eq, Set.mem_range, coeff_one, Finsupp.ext_iff, comapDomain_apply,
     Finsupp.coe_zero, Pi.ofNat_apply]
   intro; split_ifs
-  all_goals grind
+  all_goals grind only
 
 theorem renameFun_mul (p q : MvPowerSeries σ R) :
     renameFun hf (p * q) = renameFun hf p * renameFun hf q := by
@@ -72,7 +74,7 @@ theorem renameFun_mul (p q : MvPowerSeries σ R) :
       simp only [Set.subset_def, SetLike.mem_coe, mem_support_iff, ne_eq, Set.mem_range,
         Finset.ext_iff, mem_filter, mem_antidiagonal, Finsupp.ext_iff, Finsupp.coe_add,
         Pi.add_apply, and_iff_left_iff_imp, Prod.forall] at h ⊢
-      grind
+      grind only
     rw [this]
     replace this : antidiagonal (comapDomain f x hf.injOn) = image (fun (x, y) ↦
       (comapDomain f x hf.injOn, comapDomain f y hf.injOn)) (antidiagonal x) := by
@@ -88,21 +90,21 @@ theorem renameFun_mul (p q : MvPowerSeries σ R) :
           constructor; all_goals
           rw [← notMem_support_iff, mapDomain_support_of_injective hf]
           simp only [mem_image, mem_support_iff, ne_eq, not_exists, not_and]
-          grind
+          grind only
         obtain ⟨s, hs⟩ := h _ h''
         simp [← hs, mapDomain_apply hf, h' s]
-      grind
+      grind only
     rw [this, sum_image]
     · simp only [Set.subset_def, SetLike.mem_coe, mem_support_iff, ne_eq, Set.mem_range, Set.InjOn,
         mem_antidiagonal, Finsupp.ext_iff, Finsupp.coe_add, Pi.add_apply, Prod.mk.injEq,
         comapDomain_apply, and_imp, Prod.forall] at h ⊢
-      grind
+      grind only
   have : filter (fun x ↦ SetLike.coe x.2.support ⊆ Set.range f ∧
     SetLike.coe x.1.support ⊆ Set.range f) (antidiagonal x) = ∅ := by
     simp only [Set.subset_def, SetLike.mem_coe, mem_support_iff, ne_eq, Set.mem_range,
       not_forall, not_exists, Finset.ext_iff, mem_filter, mem_antidiagonal, Finsupp.ext_iff,
       Finsupp.coe_add, Pi.add_apply, notMem_empty, iff_false, not_and, Prod.forall] at h ⊢
-    grind
+    grind only
   simp [this]
 
 theorem renameFun_add (p g : MvPowerSeries σ R) : renameFun hf (p + g) =
@@ -117,7 +119,7 @@ theorem renameFun_commutes (r : R) : renameFun hf ((algebraMap R (MvPowerSeries 
   simp only [algebraMap_apply, Algebra.algebraMap_self, RingHom.id_apply, MvPowerSeries.ext_iff,
     coeff_renameFun, Set.subset_def, SetLike.mem_coe, mem_support_iff, ne_eq, Set.mem_range,
     coeff_C, Finsupp.ext_iff, comapDomain_apply, Finsupp.coe_zero, Pi.zero_apply]
-  grind
+  grind only
 
 /-- Rename all the variables in a multivariable power series by an injective map. -/
 def rename : MvPowerSeries σ R →ₐ[R] MvPowerSeries τ R := {
@@ -136,14 +138,15 @@ theorem rename_C (r : R) : rename hf (C r : MvPowerSeries σ R) = C r := by
     mem_support_iff, ne_eq, Set.mem_range, coeff_C, Finsupp.ext_iff, comapDomain_apply,
     Finsupp.coe_zero, Pi.zero_apply]
   intro; split_ifs
-  all_goals grind
+  all_goals grind only
 
 @[simp]
 theorem rename_X (i : σ) : rename hf (X i : MvPowerSeries σ R) = X (f i) := by
   simp only [rename_apply, MvPowerSeries.ext_iff, coeff_renameFun, Set.subset_def, SetLike.mem_coe,
     mem_support_iff, ne_eq, Set.mem_range, coeff_X, Finsupp.ext_iff, comapDomain_apply]
   intro; split_ifs
-  all_goals grind
+  any_goals grind only
+  all_goals grind only [= single_apply]
 
 theorem map_rename (F : R →+* S) (p : MvPowerSeries σ R) :
     map F (rename hf p) = rename hf (map F p) := by
@@ -161,7 +164,7 @@ theorem rename_rename {g : τ → α} (hg : g.Injective) (p : MvPowerSeries σ R
   intro; split_ifs
   · congr
     simp [Finsupp.ext_iff]
-  all_goals grind
+  all_goals grind only
 
 lemma rename_comp_rename {g : τ → α} (hg : g.Injective) :
     (rename (R := R) hg).comp (rename hf) = rename (hg.comp hf) :=
@@ -190,12 +193,18 @@ theorem rename_monomial (d : σ →₀ ℕ) (r : R) :
     by_cases! h : x t ≠ 0
     · grind [mapDomain_apply hf]
     rw [h, ← mem_support_iff, mapDomain_support_of_injective hf] at ht
-    grind
-  · grind [mapDomain_apply hf]
+    grind only [= mem_image, = mem_support_iff]
+  · grind only [mapDomain_apply hf]
   · simp only [not_forall, exists_prop, not_exists] at h1
     rcases h1 with ⟨t, ht, _⟩
     rw [h3 t, ← ne_eq, ← mem_support_iff, mapDomain_support_of_injective hf] at ht
-    grind
+    grind only [= mem_image]
+
+@[simp]
+theorem constantCoeff_rename (p : MvPowerSeries σ R) :
+    constantCoeff (rename hf p) = constantCoeff p := by
+  rw [rename_apply, ← coeff_zero_eq_constantCoeff_apply, coeff_renameFun]
+  simp
 
 theorem rename_injective : Function.Injective (rename (R := R) hf) := by
   intro _ _ h; ext x
@@ -221,11 +230,11 @@ theorem killComplFun_one : killComplFun f (1 : MvPowerSeries τ R) = 1 := by
   · rw [not_forall] at h2
     rcases h2 with ⟨s, _⟩
     specialize h1 (f s)
-    grind [mapDomain_apply hf]
+    grind only [mapDomain_apply hf]
   rw [not_forall] at h1
   rcases h1 with ⟨_, h⟩
   rw [← ne_eq, ← mem_support_iff, mapDomain_support_of_injective hf] at h
-  grind
+  grind only [= mem_image, = mem_support_iff]
 
 include hf in
 theorem killComplFun_mul (p q : MvPowerSeries τ R) :
@@ -249,14 +258,14 @@ theorem killComplFun_mul (p q : MvPowerSeries τ R) :
         specialize h t
         replace h : (mapDomain f x) t ≠ 0 := by omega
         rw [← mem_support_iff, mapDomain_support_of_injective hf] at h
-        grind
+        grind only [= mem_image]
       refine ⟨mapDomain_injective hf ?_, this.left, this.right⟩
       simp [mapDomain_add, ← h, this]
     rw [← h2, ← h3, ← mapDomain_add, h1]
   rw [img_e, sum_image]
   · apply Function.Injective.injOn
     simp only [Function.Injective, Prod.mk.injEq, and_imp, Prod.forall, e]
-    grind [mapDomain_injective]
+    grind only [!mapDomain_injective hf]
 
 include hf in
 theorem killComplFun_commutes (r : R) :
@@ -269,11 +278,11 @@ theorem killComplFun_commutes (r : R) :
   · rw [not_forall] at h2
     rcases h2 with ⟨s, _⟩
     specialize h1 (f s)
-    grind [mapDomain_apply hf]
+    grind only [mapDomain_apply hf]
   rw [not_forall] at h1
   rcases h1 with ⟨_, h⟩
   rw [← ne_eq, ← mem_support_iff, mapDomain_support_of_injective hf] at h
-  grind
+  grind only [= mem_image, = mem_support_iff]
 
 variable {f}
 /-- Given a function between sets of variables `f : σ → τ` that is injective with proof `hf`,
@@ -298,11 +307,11 @@ theorem killCompl_C (r : R) : killCompl hf (C r) = C r := by
   any_goals rfl
   · rw [not_forall] at h2
     rcases h2 with ⟨s, _⟩
-    grind [h1 (f s), mapDomain_apply hf]
+    grind only [h1 (f s), mapDomain_apply hf]
   rw [not_forall] at h1
   rcases h1 with ⟨t, ht⟩
   rw [← ne_eq, ← mem_support_iff, mapDomain_support_of_injective hf] at ht
-  grind
+  grind only [= mem_image, = mem_support_iff]
 
 theorem killCompl_X (t : τ) : killCompl (R := R) hf (X t) = if h : t ∈ Set.range f then
     X ((Equiv.ofInjective f hf).symm ⟨t, h⟩) else 0 := by
@@ -314,18 +323,18 @@ theorem killCompl_X (t : τ) : killCompl (R := R) hf (X t) = if h : t ∈ Set.ra
       left_eq_ite_iff, not_forall, forall_exists_index]
     intro s' hs'
     split_ifs at hs' with h
-    · grind [h1 (f s), mapDomain_apply hf]
+    · grind only [h1 (f s), mapDomain_apply hf]
     specialize h1 (f s')
     rw [ite_cond_eq_false, mapDomain_apply hf] at h1
     contradiction
-    · grind
+    · grind only
   · rw [not_exists] at h2
     replace h1 : (mapDomain f x) t ≠ 0 := by
       specialize h1 t
       simp only [↓reduceIte] at h1
       simp [h1]
     rw [← mem_support_iff, mapDomain_support_of_injective hf] at h1
-    grind
+    grind only [= mem_image]
   · rw [not_forall] at h1
     rcases h3 with ⟨s, hs⟩
     simp only [← hs, Equiv.ofInjective_symm_apply, coeff_X, Finsupp.ext_iff, single_apply,
@@ -335,9 +344,9 @@ theorem killCompl_X (t : τ) : killCompl (R := R) hf (X t) = if h : t ∈ Set.ra
     revert h1
     simp only [imp_false, Decidable.not_not]
     split_ifs
-    · grind [mapDomain_apply hf]
+    · grind only [mapDomain_apply hf]
     rw [← notMem_support_iff, mapDomain_support_of_injective hf]
-    grind
+    grind only [= mem_image, = mem_support_iff]
   simp
 
 theorem killCompl_comp_rename : (killCompl hf).comp (rename hf) = AlgHom.id R _ := by
@@ -350,8 +359,42 @@ theorem killCompl_comp_rename : (killCompl hf).comp (rename hf) = AlgHom.id R _ 
   simp only [not_forall, exists_prop, not_exists] at h
   rcases h with ⟨_, h, _⟩
   rw [← ne_eq, ← mem_support_iff, mapDomain_support_of_injective hf] at h
-  grind
+  grind only [= mem_image]
 
 @[simp]
 theorem killCompl_rename_app (p : MvPowerSeries σ R) : killCompl hf (rename hf p) = p :=
   AlgHom.congr_fun (killCompl_comp_rename hf) p
+
+variable (R)
+
+/-- `rename` is an equivalence when the underlying map is an equivalence. -/
+@[simps apply]
+def renameEquiv (e : σ ≃ τ) : MvPowerSeries σ R ≃ₐ[R] MvPowerSeries τ R := {
+  rename e.injective with
+  invFun := rename e.symm.injective
+  left_inv := by simp [Function.LeftInverse]
+  right_inv := by simp [Function.RightInverse, Function.LeftInverse]
+}
+
+@[simp]
+theorem renameEquiv_refl : renameEquiv R (Equiv.refl σ) = AlgEquiv.refl :=
+  AlgEquiv.ext (by simp)
+
+@[simp]
+theorem renameEquiv_symm (f : σ ≃ τ) : (renameEquiv R f).symm = renameEquiv R f.symm :=
+  rfl
+
+@[simp]
+theorem renameEquiv_trans (e : σ ≃ τ) (f : τ ≃ α) :
+    (renameEquiv R e).trans (renameEquiv R f) = renameEquiv R (e.trans f) :=
+  AlgEquiv.ext (rename_rename e.injective f.injective)
+
+@[simp]
+theorem coeff_rename_mapDomain (p : MvPowerSeries σ R) (x : σ →₀ ℕ) :
+    (rename hf p).coeff (x.mapDomain f) = p.coeff x := by
+  simp [← coeff_killComplFun, ← killCompl_apply hf]
+
+@[simp]
+theorem coeff_rename_embDomain (f : σ ↪ τ) (φ : MvPowerSeries σ R) (d : σ →₀ ℕ) :
+    (rename f.injective φ).coeff (d.embDomain f) = φ.coeff d := by
+  rw [embDomain_eq_mapDomain f, coeff_rename_mapDomain _ f.injective]
