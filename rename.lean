@@ -209,7 +209,7 @@ theorem constantCoeff_rename (p : MvPowerSeries σ R) :
 theorem rename_injective : Function.Injective (rename (R := R) hf) := by
   intro _ _ h; ext x
   simp only [rename_apply, MvPowerSeries.ext_iff, coeff_renameFun] at h
-  simpa [mapDomain_support_of_injective hf, comapDomain_mapDomain _ hf] using h (mapDomain f x)
+  simpa [mapDomain_support_of_injective hf, comapDomain_mapDomain f hf] using h (mapDomain f x)
 
 variable (f)
 
@@ -225,7 +225,7 @@ include hf in
 theorem killComplFun_one : killComplFun f (1 : MvPowerSeries τ R) = 1 := by
   simp only [MvPowerSeries.ext_iff, coeff_killComplFun, coeff_one, Finsupp.ext_iff,
     Finsupp.coe_zero, Pi.zero_apply]
-  intro x; split_ifs with h1 h2 _
+  intro x; split_ifs with h1 h2
   any_goals rfl
   · rw [not_forall] at h2
     rcases h2 with ⟨s, _⟩
@@ -389,6 +389,8 @@ theorem renameEquiv_trans (e : σ ≃ τ) (f : τ ≃ α) :
     (renameEquiv R e).trans (renameEquiv R f) = renameEquiv R (e.trans f) :=
   AlgEquiv.ext (rename_rename e.injective f.injective)
 
+variable {R}
+
 @[simp]
 theorem coeff_rename_mapDomain (p : MvPowerSeries σ R) (x : σ →₀ ℕ) :
     (rename hf p).coeff (x.mapDomain f) = p.coeff x := by
@@ -397,4 +399,4 @@ theorem coeff_rename_mapDomain (p : MvPowerSeries σ R) (x : σ →₀ ℕ) :
 @[simp]
 theorem coeff_rename_embDomain (f : σ ↪ τ) (φ : MvPowerSeries σ R) (d : σ →₀ ℕ) :
     (rename f.injective φ).coeff (d.embDomain f) = φ.coeff d := by
-  rw [embDomain_eq_mapDomain f, coeff_rename_mapDomain _ f.injective]
+  rw [embDomain_eq_mapDomain f, coeff_rename_mapDomain f.injective]
