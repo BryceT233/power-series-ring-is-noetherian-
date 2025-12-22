@@ -142,11 +142,11 @@ theorem rename_C (r : R) : rename hf (C r : MvPowerSeries σ R) = C r := by
 
 @[simp]
 theorem rename_X (i : σ) : rename hf (X i : MvPowerSeries σ R) = X (f i) := by
-  simp only [rename_apply, MvPowerSeries.ext_iff, coeff_renameFun, Set.subset_def, SetLike.mem_coe,
-    mem_support_iff, ne_eq, Set.mem_range, coeff_X, Finsupp.ext_iff, comapDomain_apply]
+  simp only [rename_apply, MvPowerSeries.ext_iff, coeff_renameFun, Set.subset_def,
+    SetLike.mem_coe, mem_support_iff, ne_eq, Set.mem_range, coeff_X, Finsupp.ext_iff,
+    comapDomain_apply, single_apply]
   intro; split_ifs
-  any_goals grind only
-  all_goals grind only [= single_apply]
+  all_goals grind only
 
 theorem map_rename (F : R →+* S) (p : MvPowerSeries σ R) :
     map F (rename hf p) = rename hf (map F p) := by
